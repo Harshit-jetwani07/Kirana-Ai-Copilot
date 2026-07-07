@@ -1,11 +1,10 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import uuid
-import asyncio
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
@@ -24,6 +23,8 @@ api_router = APIRouter(prefix="/api")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+DEMO_SHOP_ID = "demo"
+
 
 # ---------- Helpers ----------
 def now_iso() -> str:
@@ -38,9 +39,51 @@ def days_ago(d: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=d)).isoformat()
 
 
+async def shop_id_dep(x_shop_id: Optional[str] = Header(default=None, alias="X-Shop-Id")):
+    return x_shop_id or DEMO_SHOP_ID
+
+
 # ---------- Models ----------
+class Shop(BaseModel):
+    id: str = Field(default_factory=new_id)
+    shop_name: str
+    owner_name: str
+    phone: str
+    address: Optional[str] = ""
+    gst_number: Optional[str] = ""
+    business_type: str = "Kirana / General Store"
+    language: str = "hinglish"
+    low_stock_threshold: int = 5
+    currency: str = "INR"
+    mode: str = "live"  # demo | live
+    created_at: str = Field(default_factory=now_iso)
+
+
+class ShopCreate(BaseModel):
+    shop_name: str
+    owner_name: str
+    phone: str
+    address: Optional[str] = ""
+    gst_number: Optional[str] = ""
+    business_type: str = "Kirana / General Store"
+    language: str = "hinglish"
+    seed_samples: bool = False
+
+
+class ShopUpdate(BaseModel):
+    shop_name: Optional[str] = None
+    owner_name: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    gst_number: Optional[str] = None
+    business_type: Optional[str] = None
+    language: Optional[str] = None
+    low_stock_threshold: Optional[int] = None
+
+
 class Product(BaseModel):
     id: str = Field(default_factory=new_id)
+    shop_id: str
     name: str
     category: str
     sku: str
@@ -51,7 +94,7 @@ class Product(BaseModel):
     supplier_id: Optional[str] = None
     expiry_date: Optional[str] = None
     unit: str = "pcs"
-    movement: str = "medium"  # fast / medium / slow / dead
+    movement: str = "medium"
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -70,10 +113,11 @@ class ProductCreate(BaseModel):
 
 class Customer(BaseModel):
     id: str = Field(default_factory=new_id)
+    shop_id: str
     name: str
     phone: str
     address: Optional[str] = ""
-    tag: str = "regular"  # regular, high-value, udhaar, inactive
+    tag: str = "regular"
     pending_amount: float = 0.0
     lifetime_value: float = 0.0
     last_payment_date: Optional[str] = None
@@ -89,6 +133,7 @@ class CustomerCreate(BaseModel):
 
 class Supplier(BaseModel):
     id: str = Field(default_factory=new_id)
+    shop_id: str
     name: str
     phone: str
     company: str
@@ -122,20 +167,6 @@ class SaleCreate(BaseModel):
     customer_name: Optional[str] = None
 
 
-class Sale(BaseModel):
-    id: str = Field(default_factory=new_id)
-    items: List[BillItem]
-    subtotal: float
-    discount: float
-    tax: float
-    total: float
-    profit: float
-    payment_mode: str
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-    created_at: str = Field(default_factory=now_iso)
-
-
 class CreditPayment(BaseModel):
     customer_id: str
     amount: float
@@ -153,38 +184,18 @@ class PurchaseOrder(BaseModel):
     items: List[PurchaseOrderItem]
 
 
-class ShopSettings(BaseModel):
-    shop_name: str = "Sharma General Store"
-    owner_name: str = "Ramesh Sharma"
-    phone: str = "+91 98765 43210"
-    address: str = "Shop No. 12, Main Market, Delhi"
-    gst_number: str = ""
-    language: str = "hinglish"
-    business_type: str = "Kirana / General Store"
-    low_stock_threshold: int = 5
-    currency: str = "INR"
-
-
 class AIQuery(BaseModel):
     query: str
 
 
 class ReminderRequest(BaseModel):
     customer_id: str
-    tone: str = "polite"  # polite, firm, festival, short
+    tone: str = "polite"
 
 
-# ---------- Seed Data ----------
-async def seed_if_empty():
-    if await db.products.count_documents({}) > 0:
-        return
-    logger.info("Seeding demo data...")
-
-    # Settings
-    await db.settings.replace_one(
-        {"_id": "shop"}, {"_id": "shop", **ShopSettings().model_dump()}, upsert=True
-    )
-
+# ---------- Seed Data Generator ----------
+async def seed_shop(shop_id: str):
+    """Populate a shop with realistic Indian kirana sample data."""
     # Suppliers
     suppliers_data = [
         {"name": "Rajesh Kumar", "phone": "+91 98111 22233", "company": "Amul Distributor", "categories": ["Dairy"], "payment_due": 4500.0, "last_order_date": days_ago(3)},
@@ -192,12 +203,10 @@ async def seed_if_empty():
         {"name": "Mohan Lal", "phone": "+91 98333 44455", "company": "Local Grain Mandi", "categories": ["Grains", "Pulses"], "payment_due": 0.0, "last_order_date": days_ago(6)},
         {"name": "Vikas Patel", "phone": "+91 98444 55566", "company": "Nestle Distributor", "categories": ["Snacks", "Beverages"], "payment_due": 3200.0, "last_order_date": days_ago(4)},
     ]
-    suppliers = [Supplier(**s) for s in suppliers_data]
+    suppliers = [Supplier(shop_id=shop_id, **s) for s in suppliers_data]
     await db.suppliers.insert_many([{**s.model_dump(), "_id": s.id} for s in suppliers])
-
     sup_map = {s.company: s.id for s in suppliers}
 
-    # Products
     products_data = [
         {"name": "Amul Milk 1L", "category": "Dairy", "sku": "AML1L", "purchase_price": 62, "selling_price": 70, "stock": 12, "min_stock": 10, "supplier_id": sup_map["Amul Distributor"], "expiry_date": days_ago(-3), "movement": "fast"},
         {"name": "Amul Butter 100g", "category": "Dairy", "sku": "AMBTR", "purchase_price": 52, "selling_price": 62, "stock": 8, "min_stock": 6, "supplier_id": sup_map["Amul Distributor"], "expiry_date": days_ago(-30), "movement": "medium"},
@@ -217,11 +226,10 @@ async def seed_if_empty():
         {"name": "Britannia Bread", "category": "Bakery", "sku": "BRITB", "purchase_price": 32, "selling_price": 40, "stock": 5, "min_stock": 8, "supplier_id": sup_map["FMCG Wholesaler"], "expiry_date": days_ago(-2), "movement": "fast"},
         {"name": "Haldiram Namkeen 200g", "category": "Snacks", "sku": "HLDRM", "purchase_price": 55, "selling_price": 65, "stock": 2, "min_stock": 8, "supplier_id": sup_map["FMCG Wholesaler"], "movement": "slow"},
     ]
-    products = [Product(**p) for p in products_data]
+    products = [Product(shop_id=shop_id, **p) for p in products_data]
     await db.products.insert_many([{**p.model_dump(), "_id": p.id} for p in products])
     prod_map = {p.name: p for p in products}
 
-    # Customers
     customers_data = [
         {"name": "Suresh Verma", "phone": "919812345678", "address": "House 4, Gali No. 3", "tag": "high-value", "pending_amount": 1250.0, "lifetime_value": 18400.0, "last_payment_date": days_ago(8)},
         {"name": "Anita Devi", "phone": "919823456789", "address": "House 12, Sector 5", "tag": "udhaar", "pending_amount": 680.0, "lifetime_value": 5200.0, "last_payment_date": days_ago(15)},
@@ -231,11 +239,10 @@ async def seed_if_empty():
         {"name": "Ramesh Chandra", "phone": "919867890123", "address": "Old Colony", "tag": "regular", "pending_amount": 340.0, "lifetime_value": 2100.0, "last_payment_date": days_ago(6)},
         {"name": "Priya Sharma", "phone": "919878901234", "address": "New Market", "tag": "inactive", "pending_amount": 0.0, "lifetime_value": 1250.0, "last_payment_date": days_ago(45)},
     ]
-    customers = [Customer(**c) for c in customers_data]
+    customers = [Customer(shop_id=shop_id, **c) for c in customers_data]
     await db.customers.insert_many([{**c.model_dump(), "_id": c.id} for c in customers])
     cust_map = {c.name: c for c in customers}
 
-    # Sales over last 7 days
     sales_bundles = [
         (0, [("Amul Milk 1L", 2), ("Parle-G Biscuit", 5), ("Sugar 1kg", 1)], "cash", None),
         (0, [("Aashirvaad Atta 5kg", 1), ("Fortune Oil 1L", 1)], "upi", "Kishan Singh"),
@@ -266,49 +273,121 @@ async def seed_if_empty():
             bill_items.append(BillItem(product_id=p.id, name=p.name, qty=qty, price=p.selling_price, purchase_price=p.purchase_price).model_dump())
             subtotal += p.selling_price * qty
             profit += (p.selling_price - p.purchase_price) * qty
-        sale = {
-            "_id": new_id(),
-            "id": None,
-            "items": bill_items,
-            "subtotal": round(subtotal, 2),
-            "discount": 0.0,
-            "tax": 0.0,
-            "total": round(subtotal, 2),
-            "profit": round(profit, 2),
+        sid = new_id()
+        sales_docs.append({
+            "_id": sid, "id": sid, "shop_id": shop_id, "items": bill_items,
+            "subtotal": round(subtotal, 2), "discount": 0.0, "tax": 0.0,
+            "total": round(subtotal, 2), "profit": round(profit, 2),
             "payment_mode": mode,
             "customer_id": cust_map[cname].id if cname else None,
             "customer_name": cname,
             "created_at": days_ago(days_back),
-        }
-        sale["id"] = sale["_id"]
-        sales_docs.append(sale)
+        })
     if sales_docs:
         await db.sales.insert_many(sales_docs)
 
-    logger.info("Seed complete.")
+
+async def ensure_demo_shop():
+    """Ensure demo shop exists and is seeded."""
+    demo = await db.shops.find_one({"_id": DEMO_SHOP_ID})
+    if not demo:
+        demo_shop = Shop(
+            id=DEMO_SHOP_ID, shop_name="Sharma General Store", owner_name="Ramesh Sharma",
+            phone="+91 98765 43210", address="Shop No. 12, Main Market, Delhi",
+            business_type="Kirana / General Store", language="hinglish", mode="demo",
+        )
+        await db.shops.insert_one({**demo_shop.model_dump(), "_id": DEMO_SHOP_ID})
+
+    # Migrate legacy records to shop_id="demo"
+    for coll in ["products", "customers", "suppliers", "sales", "credit_payments", "purchase_orders", "write_offs", "supplier_payments"]:
+        await db[coll].update_many({"shop_id": {"$exists": False}}, {"$set": {"shop_id": DEMO_SHOP_ID}})
+
+    # Seed demo data if empty
+    if await db.products.count_documents({"shop_id": DEMO_SHOP_ID}) == 0:
+        logger.info("Seeding demo shop data...")
+        await seed_shop(DEMO_SHOP_ID)
 
 
-# ---------- Routes: Settings ----------
-@api_router.get("/settings")
-async def get_settings():
-    s = await db.settings.find_one({"_id": "shop"})
+async def reset_demo():
+    """Wipe demo shop's data and reseed."""
+    for coll in ["products", "customers", "suppliers", "sales", "credit_payments", "purchase_orders", "write_offs", "supplier_payments"]:
+        await db[coll].delete_many({"shop_id": DEMO_SHOP_ID})
+    await seed_shop(DEMO_SHOP_ID)
+
+
+# ---------- Shop endpoints ----------
+@api_router.post("/shops")
+async def create_shop(payload: ShopCreate):
+    shop = Shop(
+        shop_name=payload.shop_name,
+        owner_name=payload.owner_name,
+        phone=payload.phone,
+        address=payload.address or "",
+        gst_number=payload.gst_number or "",
+        business_type=payload.business_type,
+        language=payload.language,
+        mode="live",
+    )
+    await db.shops.insert_one({**shop.model_dump(), "_id": shop.id})
+    if payload.seed_samples:
+        await seed_shop(shop.id)
+    return shop.model_dump()
+
+
+@api_router.get("/shops/{sid}")
+async def get_shop(sid: str):
+    s = await db.shops.find_one({"_id": sid}, {"_id": 0})
     if not s:
-        return ShopSettings().model_dump()
-    s.pop("_id", None)
+        raise HTTPException(404, "Shop not found")
+    return s
+
+
+@api_router.put("/shops/{sid}")
+async def update_shop(sid: str, payload: ShopUpdate):
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if updates:
+        await db.shops.update_one({"_id": sid}, {"$set": updates})
+    return await db.shops.find_one({"_id": sid}, {"_id": 0})
+
+
+@api_router.post("/shops/{sid}/import-samples")
+async def import_samples(sid: str):
+    if sid == DEMO_SHOP_ID:
+        raise HTTPException(400, "Demo shop already has samples")
+    # Only import if empty
+    if await db.products.count_documents({"shop_id": sid}) > 0:
+        raise HTTPException(400, "Shop already has products. Reset first.")
+    await seed_shop(sid)
+    return {"ok": True}
+
+
+@api_router.post("/shops/demo/reset")
+async def reset_demo_endpoint():
+    await reset_demo()
+    return {"ok": True}
+
+
+# Settings — backed by shops collection for the current shop
+@api_router.get("/settings")
+async def get_settings(shop: str = Depends(shop_id_dep)):
+    s = await db.shops.find_one({"_id": shop}, {"_id": 0})
+    if not s:
+        raise HTTPException(404, "Shop not found. Please onboard first.")
     return s
 
 
 @api_router.put("/settings")
-async def update_settings(settings: ShopSettings):
-    doc = settings.model_dump()
-    await db.settings.replace_one({"_id": "shop"}, {"_id": "shop", **doc}, upsert=True)
-    return doc
+async def update_settings(payload: ShopUpdate, shop: str = Depends(shop_id_dep)):
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if updates:
+        await db.shops.update_one({"_id": shop}, {"$set": updates})
+    return await db.shops.find_one({"_id": shop}, {"_id": 0})
 
 
-# ---------- Routes: Products ----------
+# ---------- Products ----------
 @api_router.get("/products")
-async def list_products(q: Optional[str] = None, category: Optional[str] = None):
-    query = {}
+async def list_products(q: Optional[str] = None, category: Optional[str] = None, shop: str = Depends(shop_id_dep)):
+    query = {"shop_id": shop}
     if q:
         query["$or"] = [
             {"name": {"$regex": q, "$options": "i"}},
@@ -317,161 +396,144 @@ async def list_products(q: Optional[str] = None, category: Optional[str] = None)
         ]
     if category:
         query["category"] = category
-    items = await db.products.find(query, {"_id": 0}).to_list(500)
-    return items
+    return await db.products.find(query, {"_id": 0}).to_list(500)
 
 
 @api_router.post("/products")
-async def create_product(p: ProductCreate):
-    prod = Product(**p.model_dump())
+async def create_product(p: ProductCreate, shop: str = Depends(shop_id_dep)):
+    prod = Product(shop_id=shop, **p.model_dump())
     await db.products.insert_one({**prod.model_dump(), "_id": prod.id})
     return prod.model_dump()
 
 
 @api_router.put("/products/{pid}")
-async def update_product(pid: str, p: ProductCreate):
-    await db.products.update_one({"_id": pid}, {"$set": p.model_dump()})
-    updated = await db.products.find_one({"_id": pid}, {"_id": 0})
+async def update_product(pid: str, p: ProductCreate, shop: str = Depends(shop_id_dep)):
+    await db.products.update_one({"_id": pid, "shop_id": shop}, {"$set": p.model_dump()})
+    updated = await db.products.find_one({"_id": pid, "shop_id": shop}, {"_id": 0})
     if not updated:
         raise HTTPException(404, "Product not found")
     return updated
 
 
 @api_router.delete("/products/{pid}")
-async def delete_product(pid: str):
-    await db.products.delete_one({"_id": pid})
-    return {"ok": True}
-
-
-@api_router.post("/products/{pid}/adjust-stock")
-async def adjust_stock(pid: str, delta: int):
-    await db.products.update_one({"_id": pid}, {"$inc": {"stock": delta}})
+async def delete_product(pid: str, shop: str = Depends(shop_id_dep)):
+    await db.products.delete_one({"_id": pid, "shop_id": shop})
     return {"ok": True}
 
 
 @api_router.post("/products/{pid}/writeoff")
-async def writeoff_product(pid: str, reason: str = "dead_stock"):
-    prod = await db.products.find_one({"_id": pid})
+async def writeoff_product(pid: str, reason: str = "dead_stock", shop: str = Depends(shop_id_dep)):
+    prod = await db.products.find_one({"_id": pid, "shop_id": shop})
     if not prod:
         raise HTTPException(404, "Product not found")
     loss = prod.get("purchase_price", 0) * prod.get("stock", 0)
     await db.write_offs.insert_one({
-        "_id": new_id(),
-        "product_id": pid,
-        "product_name": prod["name"],
-        "qty": prod.get("stock", 0),
-        "loss_value": loss,
-        "reason": reason,
-        "created_at": now_iso(),
+        "_id": new_id(), "shop_id": shop, "product_id": pid, "product_name": prod["name"],
+        "qty": prod.get("stock", 0), "loss_value": loss, "reason": reason, "created_at": now_iso(),
     })
     await db.products.update_one({"_id": pid}, {"$set": {"stock": 0, "movement": "dead"}})
     return {"ok": True, "loss_value": loss}
 
 
 @api_router.get("/writeoffs")
-async def list_writeoffs():
-    return await db.write_offs.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+async def list_writeoffs(shop: str = Depends(shop_id_dep)):
+    return await db.write_offs.find({"shop_id": shop}, {"_id": 0}).sort("created_at", -1).to_list(200)
 
 
-# ---------- Routes: Customers ----------
+# ---------- Customers ----------
 @api_router.get("/customers")
-async def list_customers(q: Optional[str] = None, tag: Optional[str] = None):
-    query = {}
+async def list_customers(q: Optional[str] = None, tag: Optional[str] = None, shop: str = Depends(shop_id_dep)):
+    query = {"shop_id": shop}
     if q:
-        query["$or"] = [
-            {"name": {"$regex": q, "$options": "i"}},
-            {"phone": {"$regex": q, "$options": "i"}},
-        ]
+        query["$or"] = [{"name": {"$regex": q, "$options": "i"}}, {"phone": {"$regex": q, "$options": "i"}}]
     if tag:
         query["tag"] = tag
-    items = await db.customers.find(query, {"_id": 0}).to_list(500)
-    return items
+    return await db.customers.find(query, {"_id": 0}).to_list(500)
 
 
 @api_router.post("/customers")
-async def create_customer(c: CustomerCreate):
-    cust = Customer(**c.model_dump())
+async def create_customer(c: CustomerCreate, shop: str = Depends(shop_id_dep)):
+    cust = Customer(shop_id=shop, **c.model_dump())
     await db.customers.insert_one({**cust.model_dump(), "_id": cust.id})
     return cust.model_dump()
 
 
 @api_router.put("/customers/{cid}")
-async def update_customer(cid: str, c: CustomerCreate):
-    await db.customers.update_one({"_id": cid}, {"$set": c.model_dump()})
-    return await db.customers.find_one({"_id": cid}, {"_id": 0})
+async def update_customer(cid: str, c: CustomerCreate, shop: str = Depends(shop_id_dep)):
+    await db.customers.update_one({"_id": cid, "shop_id": shop}, {"$set": c.model_dump()})
+    return await db.customers.find_one({"_id": cid, "shop_id": shop}, {"_id": 0})
 
 
 @api_router.delete("/customers/{cid}")
-async def delete_customer(cid: str):
-    await db.customers.delete_one({"_id": cid})
+async def delete_customer(cid: str, shop: str = Depends(shop_id_dep)):
+    await db.customers.delete_one({"_id": cid, "shop_id": shop})
     return {"ok": True}
 
 
 @api_router.get("/customers/{cid}/history")
-async def customer_history(cid: str):
-    sales = await db.sales.find({"customer_id": cid}, {"_id": 0}).sort("created_at", -1).to_list(200)
-    payments = await db.credit_payments.find({"customer_id": cid}, {"_id": 0}).sort("created_at", -1).to_list(200)
+async def customer_history(cid: str, shop: str = Depends(shop_id_dep)):
+    sales = await db.sales.find({"customer_id": cid, "shop_id": shop}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    payments = await db.credit_payments.find({"customer_id": cid, "shop_id": shop}, {"_id": 0}).sort("created_at", -1).to_list(200)
     return {"sales": sales, "payments": payments}
 
 
-# ---------- Routes: Suppliers ----------
+# ---------- Suppliers ----------
 @api_router.get("/suppliers")
-async def list_suppliers():
-    return await db.suppliers.find({}, {"_id": 0}).to_list(500)
+async def list_suppliers(shop: str = Depends(shop_id_dep)):
+    return await db.suppliers.find({"shop_id": shop}, {"_id": 0}).to_list(500)
 
 
 @api_router.post("/suppliers")
-async def create_supplier(s: SupplierCreate):
-    sup = Supplier(**s.model_dump())
+async def create_supplier(s: SupplierCreate, shop: str = Depends(shop_id_dep)):
+    sup = Supplier(shop_id=shop, **s.model_dump())
     await db.suppliers.insert_one({**sup.model_dump(), "_id": sup.id})
     return sup.model_dump()
 
 
 @api_router.put("/suppliers/{sid}")
-async def update_supplier(sid: str, s: SupplierCreate):
-    await db.suppliers.update_one({"_id": sid}, {"$set": s.model_dump()})
-    return await db.suppliers.find_one({"_id": sid}, {"_id": 0})
+async def update_supplier(sid: str, s: SupplierCreate, shop: str = Depends(shop_id_dep)):
+    await db.suppliers.update_one({"_id": sid, "shop_id": shop}, {"$set": s.model_dump()})
+    return await db.suppliers.find_one({"_id": sid, "shop_id": shop}, {"_id": 0})
 
 
 @api_router.delete("/suppliers/{sid}")
-async def delete_supplier(sid: str):
-    await db.suppliers.delete_one({"_id": sid})
+async def delete_supplier(sid: str, shop: str = Depends(shop_id_dep)):
+    await db.suppliers.delete_one({"_id": sid, "shop_id": shop})
     return {"ok": True}
 
 
 @api_router.post("/suppliers/{sid}/pay")
-async def pay_supplier(sid: str, amount: float):
-    await db.suppliers.update_one({"_id": sid}, {"$inc": {"payment_due": -amount}})
+async def pay_supplier(sid: str, amount: float, shop: str = Depends(shop_id_dep)):
+    await db.suppliers.update_one({"_id": sid, "shop_id": shop}, {"$inc": {"payment_due": -amount}})
     await db.supplier_payments.insert_one({
-        "_id": new_id(), "supplier_id": sid, "amount": amount, "created_at": now_iso()
+        "_id": new_id(), "shop_id": shop, "supplier_id": sid, "amount": amount, "created_at": now_iso()
     })
     return {"ok": True}
 
 
 @api_router.post("/purchase-orders")
-async def receive_purchase(po: PurchaseOrder):
+async def receive_purchase(po: PurchaseOrder, shop: str = Depends(shop_id_dep)):
     total_cost = 0.0
     for item in po.items:
-        await db.products.update_one({"_id": item.product_id}, {"$inc": {"stock": item.qty}})
+        await db.products.update_one({"_id": item.product_id, "shop_id": shop}, {"$inc": {"stock": item.qty}})
         total_cost += item.qty * item.unit_cost
     await db.suppliers.update_one(
-        {"_id": po.supplier_id},
+        {"_id": po.supplier_id, "shop_id": shop},
         {"$inc": {"payment_due": total_cost}, "$set": {"last_order_date": now_iso()}}
     )
-    po_doc = {"_id": new_id(), "supplier_id": po.supplier_id, "items": [i.model_dump() for i in po.items], "total_cost": total_cost, "created_at": now_iso()}
+    po_doc = {"_id": new_id(), "shop_id": shop, "supplier_id": po.supplier_id, "items": [i.model_dump() for i in po.items], "total_cost": total_cost, "created_at": now_iso()}
     await db.purchase_orders.insert_one(po_doc)
     return {"ok": True, "total_cost": total_cost}
 
 
-# ---------- Routes: Sales / Billing ----------
+# ---------- Sales ----------
 @api_router.post("/sales")
-async def create_sale(s: SaleCreate):
-    # Enrich purchase_price and compute totals
+async def create_sale(s: SaleCreate, shop: str = Depends(shop_id_dep)):
     items = []
     subtotal = 0.0
     profit = 0.0
     for it in s.items:
-        prod = await db.products.find_one({"_id": it.product_id})
+        prod = await db.products.find_one({"_id": it.product_id, "shop_id": shop})
         if not prod:
             raise HTTPException(404, f"Product {it.product_id} not found")
         pp = prod.get("purchase_price", it.purchase_price)
@@ -479,51 +541,44 @@ async def create_sale(s: SaleCreate):
         items.append(line.model_dump())
         subtotal += it.price * it.qty
         profit += (it.price - pp) * it.qty
-        # Reduce stock
         await db.products.update_one({"_id": it.product_id}, {"$inc": {"stock": -it.qty}})
 
     total = subtotal - s.discount + s.tax
-    sale = Sale(
-        items=[BillItem(**i) for i in items],
-        subtotal=round(subtotal, 2),
-        discount=s.discount,
-        tax=s.tax,
-        total=round(total, 2),
-        profit=round(profit, 2),
-        payment_mode=s.payment_mode,
-        customer_id=s.customer_id,
-        customer_name=s.customer_name,
-    )
-    doc = sale.model_dump()
-    doc["_id"] = sale.id
+    sid = new_id()
+    doc = {
+        "_id": sid, "id": sid, "shop_id": shop, "items": items,
+        "subtotal": round(subtotal, 2), "discount": s.discount, "tax": s.tax,
+        "total": round(total, 2), "profit": round(profit, 2),
+        "payment_mode": s.payment_mode, "customer_id": s.customer_id, "customer_name": s.customer_name,
+        "created_at": now_iso(),
+    }
     await db.sales.insert_one(doc)
 
-    # Handle udhaar
     if s.payment_mode == "udhaar" and s.customer_id:
         await db.customers.update_one(
-            {"_id": s.customer_id},
+            {"_id": s.customer_id, "shop_id": shop},
             {"$inc": {"pending_amount": total, "lifetime_value": total}, "$set": {"tag": "udhaar"}}
         )
     elif s.customer_id:
         await db.customers.update_one(
-            {"_id": s.customer_id},
+            {"_id": s.customer_id, "shop_id": shop},
             {"$inc": {"lifetime_value": total}, "$set": {"last_payment_date": now_iso()}}
         )
 
-    return sale.model_dump()
+    doc.pop("_id", None)
+    return doc
 
 
 @api_router.get("/sales")
-async def list_sales(days: int = 30):
+async def list_sales(days: int = 30, shop: str = Depends(shop_id_dep)):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    items = await db.sales.find({"created_at": {"$gte": since}}, {"_id": 0}).sort("created_at", -1).to_list(1000)
-    return items
+    return await db.sales.find({"shop_id": shop, "created_at": {"$gte": since}}, {"_id": 0}).sort("created_at", -1).to_list(1000)
 
 
-# ---------- Routes: Credit Ledger ----------
+# ---------- Credit ----------
 @api_router.post("/credit/payment")
-async def record_credit_payment(p: CreditPayment):
-    cust = await db.customers.find_one({"_id": p.customer_id})
+async def record_credit_payment(p: CreditPayment, shop: str = Depends(shop_id_dep)):
+    cust = await db.customers.find_one({"_id": p.customer_id, "shop_id": shop})
     if not cust:
         raise HTTPException(404, "Customer not found")
     new_pending = max(0.0, cust.get("pending_amount", 0) - p.amount)
@@ -532,30 +587,26 @@ async def record_credit_payment(p: CreditPayment):
         update["tag"] = "regular"
     await db.customers.update_one({"_id": p.customer_id}, {"$set": update})
     await db.credit_payments.insert_one({
-        "_id": new_id(),
-        "customer_id": p.customer_id,
-        "amount": p.amount,
-        "note": p.note,
-        "created_at": now_iso(),
+        "_id": new_id(), "shop_id": shop, "customer_id": p.customer_id,
+        "amount": p.amount, "note": p.note, "created_at": now_iso(),
     })
     return {"ok": True, "pending_amount": new_pending}
 
 
-# ---------- Routes: Dashboard ----------
+# ---------- Dashboard ----------
 @api_router.get("/dashboard")
-async def dashboard():
+async def dashboard(shop: str = Depends(shop_id_dep)):
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
 
-    sales_today = await db.sales.find({"created_at": {"$gte": today_start}}, {"_id": 0}).to_list(500)
+    sales_today = await db.sales.find({"shop_id": shop, "created_at": {"$gte": today_start}}, {"_id": 0}).to_list(500)
     today_revenue = sum(s["total"] for s in sales_today)
     today_profit = sum(s["profit"] for s in sales_today)
     cash_collected = sum(s["total"] for s in sales_today if s["payment_mode"] in ("cash", "upi", "card"))
 
-    products = await db.products.find({}, {"_id": 0}).to_list(500)
+    products = await db.products.find({"shop_id": shop}, {"_id": 0}).to_list(500)
     inventory_value = sum(p["purchase_price"] * p["stock"] for p in products)
     low_stock = [p for p in products if p["stock"] <= p["min_stock"]]
 
-    # Expiry within 7 days
     expiring = []
     today = datetime.now(timezone.utc)
     for p in products:
@@ -567,19 +618,19 @@ async def dashboard():
             except Exception:
                 pass
 
-    customers = await db.customers.find({}, {"_id": 0}).to_list(500)
+    customers = await db.customers.find({"shop_id": shop}, {"_id": 0}).to_list(500)
     pending_udhaar = sum(c["pending_amount"] for c in customers)
     udhaar_customers = [c for c in customers if c["pending_amount"] > 0]
 
-    suppliers = await db.suppliers.find({}, {"_id": 0}).to_list(500)
+    suppliers = await db.suppliers.find({"shop_id": shop}, {"_id": 0}).to_list(500)
     supplier_due = sum(s["payment_due"] for s in suppliers)
 
-    # 7-day trend
     trend = []
     for i in range(6, -1, -1):
         day_start = (datetime.now(timezone.utc) - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
         day_end = day_start + timedelta(days=1)
         day_sales = await db.sales.find({
+            "shop_id": shop,
             "created_at": {"$gte": day_start.isoformat(), "$lt": day_end.isoformat()}
         }, {"_id": 0}).to_list(500)
         trend.append({
@@ -589,9 +640,8 @@ async def dashboard():
             "profit": round(sum(s["profit"] for s in day_sales), 2),
         })
 
-    # Top products (30 days)
     since_30 = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
-    all_sales_30 = await db.sales.find({"created_at": {"$gte": since_30}}, {"_id": 0}).to_list(2000)
+    all_sales_30 = await db.sales.find({"shop_id": shop, "created_at": {"$gte": since_30}}, {"_id": 0}).to_list(2000)
     top = {}
     for s in all_sales_30:
         for it in s["items"]:
@@ -600,12 +650,10 @@ async def dashboard():
             top[it["name"]]["revenue"] += it["qty"] * it["price"]
     top_products = sorted(top.values(), key=lambda x: x["qty"], reverse=True)[:5]
 
-    # Payment mode split (today)
     modes = {"cash": 0.0, "upi": 0.0, "card": 0.0, "udhaar": 0.0}
     for s in sales_today:
         modes[s["payment_mode"]] = modes.get(s["payment_mode"], 0) + s["total"]
 
-    # Aaj ka kaam
     aaj_ka_kaam = []
     for p in low_stock[:5]:
         aaj_ka_kaam.append({"type": "low_stock", "text": f"{p['name']} sirf {p['stock']} {p['unit']} bacha hai — order karo", "id": p["id"]})
@@ -632,22 +680,27 @@ async def dashboard():
         "payment_modes": modes,
         "aaj_ka_kaam": aaj_ka_kaam,
         "bills_today": len(sales_today),
+        "counts": {
+            "products": len(products),
+            "customers": len(customers),
+            "suppliers": len(suppliers),
+            "sales_all_time": await db.sales.count_documents({"shop_id": shop}),
+        },
     }
 
 
-# ---------- Routes: AI Advisor ----------
-async def build_business_context() -> str:
-    products = await db.products.find({}, {"_id": 0}).to_list(500)
-    customers = await db.customers.find({}, {"_id": 0}).to_list(500)
-    suppliers = await db.suppliers.find({}, {"_id": 0}).to_list(500)
+# ---------- AI ----------
+async def build_business_context(shop: str) -> str:
+    products = await db.products.find({"shop_id": shop}, {"_id": 0}).to_list(500)
+    customers = await db.customers.find({"shop_id": shop}, {"_id": 0}).to_list(500)
+    suppliers = await db.suppliers.find({"shop_id": shop}, {"_id": 0}).to_list(500)
     since_7 = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-    sales_7 = await db.sales.find({"created_at": {"$gte": since_7}}, {"_id": 0}).to_list(2000)
+    sales_7 = await db.sales.find({"shop_id": shop, "created_at": {"$gte": since_7}}, {"_id": 0}).to_list(2000)
 
     low_stock = [f"{p['name']} (stock: {p['stock']}, min: {p['min_stock']})" for p in products if p["stock"] <= p["min_stock"]]
     udhaar = [f"{c['name']} - ₹{int(c['pending_amount'])}" for c in customers if c["pending_amount"] > 0]
     sup_due = [f"{s['company']} - ₹{int(s['payment_due'])}" for s in suppliers if s["payment_due"] > 0]
 
-    # Top selling from 7 days
     counter = {}
     for s in sales_7:
         for it in s["items"]:
@@ -657,63 +710,61 @@ async def build_business_context() -> str:
     revenue_7 = sum(s["total"] for s in sales_7)
     profit_7 = sum(s["profit"] for s in sales_7)
 
-    ctx = f"""Shop Business Data (last 7 days):
+    return f"""Shop Business Data (last 7 days):
 - Revenue: ₹{int(revenue_7)}, Profit: ₹{int(profit_7)}, Total bills: {len(sales_7)}
 - Top selling products: {', '.join(f'{n} ({q} units)' for n, q in top)}
 - Low stock items: {'; '.join(low_stock) if low_stock else 'none'}
 - Customers with udhaar pending: {'; '.join(udhaar) if udhaar else 'none'}
 - Supplier payments due: {'; '.join(sup_due) if sup_due else 'none'}
 """
-    return ctx
 
 
 @api_router.get("/ai/summary")
-async def ai_summary():
+async def ai_summary(shop: str = Depends(shop_id_dep)):
+    products_count = await db.products.count_documents({"shop_id": shop})
+    if products_count == 0:
+        return {"summary": "- Aapke shop mein abhi koi product nahi hai. Pehle inventory mein products add karo.\n- Fir customer aur supplier add karo.\n- Phir billing shuru karo — main aapko har din smart advice dungi."}
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
-        ctx = await build_business_context()
+        ctx = await build_business_context(shop)
         chat = LlmChat(
             api_key=os.environ["EMERGENT_LLM_KEY"],
-            session_id=f"dukaan-summary-{datetime.now().strftime('%Y%m%d')}",
+            session_id=f"dukaan-summary-{shop}-{datetime.now().strftime('%Y%m%d')}",
             system_message=(
                 "Tum ek Indian kirana shop ka business advisor ho. "
-                "Hamesha Hinglish (Hindi + English mix, English letters mein) mein reply karo. "
-                "Short, direct, actionable insights do. Emoji use MAT karo. "
-                "Numbers rupee (₹) mein do."
+                "Hamesha Hinglish mein reply karo. Short, direct, actionable insights do. "
+                "Emoji use MAT karo. Numbers rupee (₹) mein do."
             ),
         ).with_model("gemini", "gemini-3-flash-preview")
-
         prompt = f"{ctx}\n\nAaj ka business summary do — 3-4 crisp bullet points mein. Har point mein ek specific action ya insight ho. Format: '- point'."
         resp = await chat.send_message(UserMessage(text=prompt))
         return {"summary": str(resp).strip()}
     except Exception as e:
         logger.error(f"AI summary error: {e}")
-        # Fallback rule-based summary
-        products = await db.products.find({}, {"_id": 0}).to_list(500)
+        products = await db.products.find({"shop_id": shop}, {"_id": 0}).to_list(500)
         low = [p for p in products if p["stock"] <= p["min_stock"]]
-        customers = await db.customers.find({}, {"_id": 0}).to_list(500)
+        customers = await db.customers.find({"shop_id": shop}, {"_id": 0}).to_list(500)
         pending = sum(c["pending_amount"] for c in customers)
         parts = []
         if low:
             parts.append(f"- {low[0]['name']} sirf {low[0]['stock']} bacha hai, aaj hi order karo")
         if pending > 0:
             parts.append(f"- Kul ₹{int(pending)} udhaar pending hai, top customers ko reminder bhejo")
-        parts.append("- Parle-G aur Amul Milk fast-moving hai — stock full rakho")
-        return {"summary": "\n".join(parts)}
+        parts.append("- Fast-moving items ka stock full rakho, slow-moving par discount lagao")
+        return {"summary": "\n".join(parts) if parts else "- Aaj sab clear hai. Naye grahak laane ke liye offer chalaao."}
 
 
 @api_router.post("/ai/ask")
-async def ai_ask(q: AIQuery):
+async def ai_ask(q: AIQuery, shop: str = Depends(shop_id_dep)):
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage
-        ctx = await build_business_context()
+        ctx = await build_business_context(shop)
         chat = LlmChat(
             api_key=os.environ["EMERGENT_LLM_KEY"],
             session_id=f"dukaan-ask-{new_id()}",
             system_message=(
                 "Tum ek Indian kirana shop ka expert business advisor ho. "
-                "Hinglish (Hindi + English mix, English letters mein) mein reply karo. "
-                "Specific, actionable advice do based on data. Emoji use MAT karo. Short paragraphs."
+                "Hinglish mein reply karo. Specific, actionable advice do. Emoji use MAT karo."
             ),
         ).with_model("gemini", "gemini-3-flash-preview")
         prompt = f"{ctx}\n\nShopkeeper ka sawaal: {q.query}\n\nJavab do."
@@ -725,10 +776,10 @@ async def ai_ask(q: AIQuery):
 
 
 @api_router.get("/ai/reorder-suggestions")
-async def ai_reorder():
-    products = await db.products.find({}, {"_id": 0}).to_list(500)
+async def ai_reorder(shop: str = Depends(shop_id_dep)):
+    products = await db.products.find({"shop_id": shop}, {"_id": 0}).to_list(500)
     since_7 = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
-    sales_7 = await db.sales.find({"created_at": {"$gte": since_7}}, {"_id": 0}).to_list(2000)
+    sales_7 = await db.sales.find({"shop_id": shop, "created_at": {"$gte": since_7}}, {"_id": 0}).to_list(2000)
 
     daily_sold = {}
     for s in sales_7:
@@ -741,57 +792,60 @@ async def ai_reorder():
         if p["stock"] <= p["min_stock"] or (avg_daily > 0 and p["stock"] < avg_daily * 3):
             recommended = max(p["min_stock"] * 3, int(avg_daily * 14))
             suggestions.append({
-                "product_id": p["id"],
-                "name": p["name"],
-                "current_stock": p["stock"],
-                "avg_daily_sale": round(avg_daily, 1),
-                "recommended_order": recommended,
+                "product_id": p["id"], "name": p["name"], "current_stock": p["stock"],
+                "avg_daily_sale": round(avg_daily, 1), "recommended_order": recommended,
                 "reason": f"Avg daily sale {round(avg_daily,1)} units, current stock sirf {p['stock']} bacha hai" if avg_daily > 0 else f"Stock {p['stock']} minimum {p['min_stock']} se kam hai",
             })
     return {"suggestions": suggestions}
 
 
 @api_router.post("/ai/reminder")
-async def ai_reminder(r: ReminderRequest):
-    cust = await db.customers.find_one({"_id": r.customer_id}, {"_id": 0})
+async def ai_reminder(r: ReminderRequest, shop: str = Depends(shop_id_dep)):
+    cust = await db.customers.find_one({"_id": r.customer_id, "shop_id": shop}, {"_id": 0})
     if not cust:
         raise HTTPException(404, "Customer not found")
+    shop_doc = await db.shops.find_one({"_id": shop}, {"_id": 0})
+    shop_name = shop_doc.get("shop_name", "Store") if shop_doc else "Store"
 
     templates = {
-        "polite": f"Namaste {cust['name']} ji, umeed hai aap theek honge. Aapke Sharma General Store par ₹{int(cust['pending_amount'])} ka payment pending hai. Jab time mile, please clear kar dijiye. Dhanyawad!",
-        "firm": f"{cust['name']} ji, aapka ₹{int(cust['pending_amount'])} ka payment kaafi din se pending hai. Kripya jald se jald settle kar dein. — Sharma General Store",
-        "festival": f"Namaste {cust['name']} ji! Tyohaar ki shubhkaamnayein. Aapka ₹{int(cust['pending_amount'])} ka udhaar pending hai — tyohaar se pehle clear kar denge to accha rahega. Sharma General Store.",
-        "short": f"Hi {cust['name']} ji, ₹{int(cust['pending_amount'])} udhaar pending hai. Please clear kariye. — Sharma Store",
+        "polite": f"Namaste {cust['name']} ji, umeed hai aap theek honge. Aapka {shop_name} par ₹{int(cust['pending_amount'])} ka payment pending hai. Jab time mile, please clear kar dijiye. Dhanyawad!",
+        "firm": f"{cust['name']} ji, aapka ₹{int(cust['pending_amount'])} ka payment kaafi din se pending hai. Kripya jald se jald settle kar dein. — {shop_name}",
+        "festival": f"Namaste {cust['name']} ji! Tyohaar ki shubhkaamnayein. Aapka ₹{int(cust['pending_amount'])} ka udhaar pending hai — tyohaar se pehle clear kar denge to accha rahega. {shop_name}.",
+        "short": f"Hi {cust['name']} ji, ₹{int(cust['pending_amount'])} udhaar pending hai. Please clear kariye. — {shop_name}",
     }
     return {"message": templates.get(r.tone, templates["polite"]), "phone": cust["phone"]}
 
 
 @api_router.get("/ai/supplier-message/{sid}")
-async def ai_supplier_message(sid: str):
-    sup = await db.suppliers.find_one({"_id": sid}, {"_id": 0})
+async def ai_supplier_message(sid: str, shop: str = Depends(shop_id_dep)):
+    sup = await db.suppliers.find_one({"_id": sid, "shop_id": shop}, {"_id": 0})
     if not sup:
         raise HTTPException(404, "Supplier not found")
-    # Find low-stock products from this supplier
-    low = await db.products.find({"supplier_id": sid, "$expr": {"$lte": ["$stock", "$min_stock"]}}, {"_id": 0}).to_list(50)
+    shop_doc = await db.shops.find_one({"_id": shop}, {"_id": 0})
+    shop_name = shop_doc.get("shop_name", "Store") if shop_doc else "Store"
+
+    low = await db.products.find(
+        {"supplier_id": sid, "shop_id": shop, "$expr": {"$lte": ["$stock", "$min_stock"]}},
+        {"_id": 0}
+    ).to_list(50)
     if not low:
         return {"message": f"Namaste {sup['name']} ji, bas order confirmation ke liye contact kiya. Baat karte hain.", "phone": sup["phone"]}
     lines = [f"{p['min_stock']*3} {p['unit']} {p['name']}" for p in low]
-    msg = f"Namaste {sup['name']} ji, ye items bhej dena:\n" + "\n".join(f"- {l}" for l in lines) + f"\n\nJaldi delivery kar dena. Dhanyawad!\n— Sharma General Store"
+    msg = f"Namaste {sup['name']} ji, ye items bhej dena:\n" + "\n".join(f"- {l}" for l in lines) + f"\n\nJaldi delivery kar dena. Dhanyawad!\n— {shop_name}"
     return {"message": msg, "phone": sup["phone"]}
 
 
 # ---------- Reports ----------
 @api_router.get("/reports/summary")
-async def reports_summary(days: int = 7):
+async def reports_summary(days: int = 7, shop: str = Depends(shop_id_dep)):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    sales = await db.sales.find({"created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
+    sales = await db.sales.find({"shop_id": shop, "created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
     revenue = sum(s["total"] for s in sales)
     profit = sum(s["profit"] for s in sales)
     modes = {"cash": 0.0, "upi": 0.0, "card": 0.0, "udhaar": 0.0}
     for s in sales:
         modes[s["payment_mode"]] = modes.get(s["payment_mode"], 0) + s["total"]
 
-    # Product performance
     prod_perf = {}
     for s in sales:
         for it in s["items"]:
@@ -804,70 +858,55 @@ async def reports_summary(days: int = 7):
     top_selling = sorted(perf_list, key=lambda x: x["qty"], reverse=True)[:10]
     low_margin = sorted([p for p in perf_list if p["revenue"] > 0], key=lambda x: x["profit"] / max(x["revenue"], 1))[:10]
 
-    products = await db.products.find({}, {"_id": 0}).to_list(500)
+    products = await db.products.find({"shop_id": shop}, {"_id": 0}).to_list(500)
     sold_products = set(prod_perf.keys())
     slow_moving = [p for p in products if p["name"] not in sold_products or prod_perf.get(p["name"], {}).get("qty", 0) < 3][:10]
 
     return {
-        "revenue": round(revenue, 2),
-        "profit": round(profit, 2),
-        "bills": len(sales),
-        "avg_bill": round(revenue / max(len(sales), 1), 2),
-        "payment_modes": modes,
-        "top_selling": top_selling,
-        "low_margin": low_margin,
+        "revenue": round(revenue, 2), "profit": round(profit, 2),
+        "bills": len(sales), "avg_bill": round(revenue / max(len(sales), 1), 2),
+        "payment_modes": modes, "top_selling": top_selling, "low_margin": low_margin,
         "slow_moving": [{"name": p["name"], "stock": p["stock"], "category": p["category"]} for p in slow_moving],
     }
 
 
 @api_router.get("/reports/gst")
-async def reports_gst(days: int = 30, rate: float = 5.0):
+async def reports_gst(days: int = 30, rate: float = 5.0, shop: str = Depends(shop_id_dep)):
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    sales = await db.sales.find({"created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
+    sales = await db.sales.find({"shop_id": shop, "created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
     total_sales = sum(s["total"] for s in sales)
-    # Split by category-inferred taxable/non-taxable — assume all taxable for demo
     taxable_sales = total_sales
-    # If rate is applied on top: GST = taxable * rate/(100+rate). If inclusive.
     gst_collected = round(taxable_sales * rate / (100 + rate), 2)
     net_sales = round(taxable_sales - gst_collected, 2)
 
-    # Purchase GST estimate (from purchase_orders)
-    pos = await db.purchase_orders.find({"created_at": {"$gte": since}}, {"_id": 0}).to_list(500)
+    pos = await db.purchase_orders.find({"shop_id": shop, "created_at": {"$gte": since}}, {"_id": 0}).to_list(500)
     purchase_total = sum(po.get("total_cost", 0) for po in pos)
     purchase_gst = round(purchase_total * rate / (100 + rate), 2)
-
     net_gst_liability = round(gst_collected - purchase_gst, 2)
 
-    # Per-mode breakdown
     modes = {"cash": 0.0, "upi": 0.0, "card": 0.0, "udhaar": 0.0}
     for s in sales:
         modes[s["payment_mode"]] = modes.get(s["payment_mode"], 0) + s["total"]
 
     return {
-        "period_days": days,
-        "rate": rate,
-        "total_sales": round(total_sales, 2),
-        "taxable_sales": round(taxable_sales, 2),
-        "net_sales": net_sales,
-        "gst_collected": gst_collected,
-        "purchase_total": round(purchase_total, 2),
-        "purchase_gst": purchase_gst,
+        "period_days": days, "rate": rate,
+        "total_sales": round(total_sales, 2), "taxable_sales": round(taxable_sales, 2),
+        "net_sales": net_sales, "gst_collected": gst_collected,
+        "purchase_total": round(purchase_total, 2), "purchase_gst": purchase_gst,
         "net_gst_liability": net_gst_liability,
-        "bills_count": len(sales),
-        "payment_modes": modes,
+        "bills_count": len(sales), "payment_modes": modes,
         "note": "Estimated GST calculation. For actual filing consult your CA.",
     }
 
 
 @api_router.get("/reports/digest")
-async def reports_digest(period: str = "week"):
+async def reports_digest(period: str = "week", shop: str = Depends(shop_id_dep)):
     days = 7 if period == "week" else 30
     since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
-    sales = await db.sales.find({"created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
+    sales = await db.sales.find({"shop_id": shop, "created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
     revenue = sum(s["total"] for s in sales)
     profit = sum(s["profit"] for s in sales)
 
-    # Best day
     per_day = {}
     for s in sales:
         d = s["created_at"][:10]
@@ -876,23 +915,19 @@ async def reports_digest(period: str = "week"):
         per_day[d]["bills"] += 1
     best_day = max(per_day.items(), key=lambda x: x[1]["revenue"]) if per_day else (None, {"revenue": 0, "bills": 0})
 
-    # Top product
     counter = {}
     for s in sales:
         for it in s["items"]:
             counter[it["name"]] = counter.get(it["name"], 0) + it["qty"]
     top = sorted(counter.items(), key=lambda x: x[1], reverse=True)[:3]
 
-    customers = await db.customers.find({}, {"_id": 0}).to_list(500)
+    customers = await db.customers.find({"shop_id": shop}, {"_id": 0}).to_list(500)
     new_udhaar = sum(c["pending_amount"] for c in customers)
 
     return {
-        "period": period,
-        "days": days,
-        "revenue": round(revenue, 2),
-        "profit": round(profit, 2),
-        "bills": len(sales),
-        "avg_bill": round(revenue / max(len(sales), 1), 2),
+        "period": period, "days": days,
+        "revenue": round(revenue, 2), "profit": round(profit, 2),
+        "bills": len(sales), "avg_bill": round(revenue / max(len(sales), 1), 2),
         "profit_margin": round(profit / max(revenue, 1) * 100, 1),
         "best_day": {"date": best_day[0], "revenue": round(best_day[1]["revenue"], 2), "bills": best_day[1]["bills"]},
         "top_products": [{"name": n, "qty": q} for n, q in top],
@@ -903,7 +938,7 @@ async def reports_digest(period: str = "week"):
 # ---------- Startup ----------
 @app.on_event("startup")
 async def on_startup():
-    await seed_if_empty()
+    await ensure_demo_shop()
 
 
 @app.on_event("shutdown")

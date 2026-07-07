@@ -61,3 +61,33 @@ Mobile-first web app for Indian kirana stores. Manages billing, inventory, profi
 - **Aaj ka Workflow section** on Dashboard: 4-step visual card (Billing → Inventory Update → Udhaar Reminder → Supplier Reorder). Steps show green (done) / blue (active) / slate (idle) state with metrics ("10 bills aaj", "7 low stock", "4 customers", "₹20,500 due"). Each step routes to the relevant page.
 - **Switch Shop** action in sidebar clears localStorage and returns to /welcome.
 - **Business type** added to ShopSettings model in backend.
+
+## Feb 2026 - Major Refactor: Multi-Shop SaaS Product
+
+### Architecture Change
+- **Multi-shop backend** via `X-Shop-Id` header (no auth, localStorage-based). Every collection (products, customers, suppliers, sales, credit_payments, purchase_orders, write_offs, supplier_payments) now has `shop_id`. All CRUD & analytics endpoints filter by shop_id via `Depends(shop_id_dep)`.
+- New `shops` collection stores shop profile (name, owner, phone, address, GST, business_type, language, mode).
+- Demo shop has fixed id `"demo"` (auto-seeded on startup). Live shops get UUIDs.
+- Existing data migrated to `shop_id="demo"` via startup routine.
+
+### Frontend
+- `/` = **Landing page**: hero + product mockup, problem section (6 cards), features (9 cards), workflow strip (6 steps), social proof (dark card with metrics), final CTA. Sticky top-nav with Start Free / View Demo.
+- `/onboarding` = 2-step **shop setup wizard** (details → empty vs sample data choice with "Popular" badge on samples).
+- `/dashboard` etc. protected by `RequireShop` — redirects to `/` if no shop_id in localStorage.
+- Landing → "View Demo" sets shop_id=demo, mode=demo.
+- Landing → "Start Free" → onboarding → creates shop via POST /api/shops with optional seed_samples flag.
+- Layout header: `Demo` (amber) vs `My Shop` (green) badge based on mode.
+- **Empty state Dashboard**: Getting Started hero + 4 CTA cards (Create first product, first bill, first customer, add supplier) + Import Sample Data fallback.
+- Settings adds `Import Kirana Sample Data` button (live shops only, empty-only) and `Reset Demo Data` button (demo shop only).
+- api.js: axios interceptor injects `X-Shop-Id` header from localStorage on every request.
+
+### Endpoints Added
+- POST /api/shops — create shop (with optional seed)
+- GET /api/shops/{id}
+- PUT /api/shops/{id}
+- POST /api/shops/{id}/import-samples
+- POST /api/shops/demo/reset
+- All existing endpoints now scoped by X-Shop-Id header.
+
+### Verified
+- Demo shop preserved (17 products, 23 sales), new shops isolated, sample import works (empty → 17 products/7 customers/4 suppliers/18 sales), product creation works, dashboard counts correct.

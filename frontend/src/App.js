@@ -2,7 +2,8 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import Layout from "@/components/Layout";
-import Welcome from "@/pages/Welcome";
+import Landing from "@/pages/Landing";
+import Onboarding from "@/pages/Onboarding";
 import Dashboard from "@/pages/Dashboard";
 import Billing from "@/pages/Billing";
 import Inventory from "@/pages/Inventory";
@@ -12,10 +13,12 @@ import Customers from "@/pages/Customers";
 import Advisor from "@/pages/Advisor";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import { getShopId } from "@/lib/api";
 
-function RootRedirect() {
-  const onboarded = typeof window !== "undefined" && localStorage.getItem("dukaan_onboarded") === "true";
-  return <Navigate to={onboarded ? "/dashboard" : "/welcome"} replace />;
+function RequireShop({ children }) {
+  const sid = getShopId();
+  if (!sid) return <Navigate to="/" replace />;
+  return children;
 }
 
 function App() {
@@ -23,9 +26,9 @@ function App() {
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/welcome" element={<Welcome />} />
-          <Route element={<Layout />}>
+          <Route path="/" element={<Landing />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route element={<RequireShop><Layout /></RequireShop>}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/billing" element={<Billing />} />
             <Route path="/inventory" element={<Inventory />} />

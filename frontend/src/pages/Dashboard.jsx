@@ -72,6 +72,43 @@ export default function Dashboard() {
   }
 
   const paymentModeData = Object.entries(data.payment_modes).map(([k, v]) => ({ mode: k.toUpperCase(), amount: v }));
+  const isEmpty = data.counts && data.counts.products === 0 && data.counts.sales_all_time === 0;
+
+  if (isEmpty) {
+    return (
+      <div className="space-y-6" data-testid="dashboard-empty">
+        <div>
+          <h1 className="font-display text-3xl md:text-4xl font-black text-slate-900">Namaste, {(settings.owner_name || "Owner").split(" ")[0]} ji</h1>
+          <p className="text-slate-600 mt-1">Aapki dukaan ready hai! Chaliye pehla kaam karte hain.</p>
+        </div>
+
+        <Card className="p-6 md:p-8 bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0">
+          <div className="text-[11px] font-bold uppercase tracking-widest opacity-80">Getting Started</div>
+          <div className="font-display text-2xl md:text-3xl font-black mt-1">Pehle kya karna hai?</div>
+          <p className="text-sm opacity-90 mt-2 max-w-lg">4 quick steps mein aapki dukaan fully functional ho jaayegi. Har step complete karne se dashboard smart hoti jaayegi.</p>
+        </Card>
+
+        <div className="grid md:grid-cols-2 gap-3">
+          <EmptyStep step="1" to="/inventory" icon={Package} title="Create your first product" hindi="Apna pehla product add karo" cta="Product add karo" />
+          <EmptyStep step="2" to="/billing" icon={Receipt} title="Make your first bill" hindi="Pehla bill banao" cta="Naya bill" />
+          <EmptyStep step="3" to="/customers" icon={ShoppingCart} title="Add first customer" hindi="Pehla grahak add karo" cta="Customer add karo" />
+          <EmptyStep step="4" to="/suppliers" icon={Truck} title="Add supplier" hindi="Supplier details save karo" cta="Supplier add karo" />
+        </div>
+
+        <Card className="p-5 bg-white border-slate-200">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <div className="font-display font-bold text-slate-900">Ya sample data se try karo</div>
+              <div className="text-sm text-slate-600">17 kirana products, 7 customers, 4 suppliers ke saath demo experience.</div>
+            </div>
+            <Link to="/settings">
+              <Button data-testid="empty-import-samples" variant="outline" className="h-10"><Sparkles className="w-4 h-4 mr-2 text-blue-600" /> Import Sample Data</Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" data-testid="dashboard-page">
@@ -274,6 +311,22 @@ function WorkflowStep({ step, icon: Icon, title, hindi, to, active, done, metric
       <div className="text-[11px] text-slate-500 mb-2">{hindi}</div>
       <div className={`font-mono-num text-xs font-semibold ${done ? "text-green-700" : "text-slate-700"}`}>{metric}</div>
       <ArrowRight className="w-3.5 h-3.5 absolute bottom-3 right-3 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+    </Link>
+  );
+}
+
+function EmptyStep({ step, to, icon: Icon, title, hindi, cta }) {
+  return (
+    <Link to={to} data-testid={`empty-step-${step}`} className="group p-5 rounded-xl border border-slate-200 bg-white hover:border-blue-500 hover:shadow-md transition-all">
+      <div className="flex items-start justify-between mb-3">
+        <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center"><Icon size={18} /></div>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Step {step}</div>
+      </div>
+      <div className="font-display font-bold text-slate-900">{title}</div>
+      <div className="text-xs text-slate-500 mb-3">{hindi}</div>
+      <div className="text-sm font-semibold text-blue-700 group-hover:underline flex items-center gap-1">
+        {cta} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-all" />
+      </div>
     </Link>
   );
 }

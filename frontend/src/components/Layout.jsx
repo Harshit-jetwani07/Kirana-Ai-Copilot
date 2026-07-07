@@ -28,6 +28,7 @@ export default function Layout() {
   const [notifs, setNotifs] = useState([]);
   const [saved, setSaved] = useState(true);
   const mode = typeof window !== "undefined" ? localStorage.getItem("dukaan_mode") || "demo" : "demo";
+  const isDemo = mode === "demo";
 
   useEffect(() => {
     api.settings().then(setSettings).catch(() => {});
@@ -49,7 +50,8 @@ export default function Layout() {
   const logout = () => {
     localStorage.removeItem("dukaan_onboarded");
     localStorage.removeItem("dukaan_mode");
-    nav_("/welcome");
+    localStorage.removeItem("dukaan_shop_id");
+    nav_("/");
   };
 
   return (
@@ -105,8 +107,10 @@ export default function Layout() {
               <div className="font-display font-extrabold text-sm md:text-base text-slate-900 truncate max-w-[160px] md:max-w-none" data-testid="header-shop-name">
                 {settings.shop_name}
               </div>
-              {mode === "demo" && (
+              {isDemo ? (
                 <Badge data-testid="demo-mode-badge" className="bg-amber-100 text-amber-700 hover:bg-amber-100 h-5 text-[10px] font-bold uppercase tracking-widest">Demo</Badge>
+              ) : (
+                <Badge data-testid="my-shop-badge" className="bg-green-100 text-green-700 hover:bg-green-100 h-5 text-[10px] font-bold uppercase tracking-widest">My Shop</Badge>
               )}
             </div>
             <div className="hidden md:block text-[11px] text-slate-500 truncate">

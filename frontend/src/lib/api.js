@@ -5,6 +5,25 @@ export const API = `${BACKEND_URL}/api`;
 
 const client = axios.create({ baseURL: API });
 
+client.interceptors.request.use((cfg) => {
+  const sid = typeof window !== "undefined" ? localStorage.getItem("dukaan_shop_id") : null;
+  if (sid) cfg.headers["X-Shop-Id"] = sid;
+  return cfg;
+});
+
+export const getShopId = () => (typeof window !== "undefined" ? localStorage.getItem("dukaan_shop_id") : null);
+export const getMode = () => (typeof window !== "undefined" ? localStorage.getItem("dukaan_mode") : null);
+export const setShop = (id, mode) => {
+  localStorage.setItem("dukaan_shop_id", id);
+  localStorage.setItem("dukaan_mode", mode);
+  localStorage.setItem("dukaan_onboarded", "true");
+};
+export const clearShop = () => {
+  localStorage.removeItem("dukaan_shop_id");
+  localStorage.removeItem("dukaan_mode");
+  localStorage.removeItem("dukaan_onboarded");
+};
+
 export const api = {
   dashboard: () => client.get("/dashboard").then(r => r.data),
   products: (params) => client.get("/products", { params }).then(r => r.data),
@@ -33,6 +52,9 @@ export const api = {
   writeoffs: () => client.get("/writeoffs").then(r => r.data),
   settings: () => client.get("/settings").then(r => r.data),
   updateSettings: (s) => client.put("/settings", s).then(r => r.data),
+  createShop: (payload) => client.post("/shops", payload).then(r => r.data),
+  importSamples: (sid) => client.post(`/shops/${sid}/import-samples`).then(r => r.data),
+  resetDemo: () => client.post("/shops/demo/reset").then(r => r.data),
 };
 
 export const fmtINR = (n) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
