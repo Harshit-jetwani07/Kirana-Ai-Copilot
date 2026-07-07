@@ -51,7 +51,7 @@ export default function Customers() {
 
   const tagColors = {
     "regular": "bg-slate-100 text-slate-700",
-    "high-value": "bg-blue-100 text-blue-700",
+    "high-value": "bg-[#EEECFB] text-[#312E81]",
     "udhaar": "bg-red-100 text-red-700",
     "inactive": "bg-amber-100 text-amber-700",
   };
@@ -63,7 +63,7 @@ export default function Customers() {
           <h1 className="font-display text-3xl md:text-4xl font-black text-slate-900">Customers</h1>
           <p className="text-slate-600 text-sm mt-1">Regular grahak & CRM</p>
         </div>
-        <Button data-testid="add-customer-btn" onClick={() => setOpen(true)} className="h-11 bg-blue-600 hover:bg-blue-700">
+        <Button data-testid="add-customer-btn" onClick={() => setOpen(true)} className="h-11 bg-[#312E81] hover:bg-[#1E1B4B]">
           <Plus className="w-4 h-4 mr-2" /> Customer
         </Button>
       </div>
@@ -74,7 +74,7 @@ export default function Customers() {
             key={t}
             data-testid={`filter-${t}`}
             onClick={() => setFilter(t)}
-            className={`h-9 px-4 rounded-full text-xs font-bold uppercase ${filter === t ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-600"}`}
+            className={`h-9 px-4 rounded-full text-xs font-bold uppercase ${filter === t ? "bg-[#312E81] text-white" : "bg-white border border-slate-200 text-slate-600"}`}
           >
             {t}
           </button>
@@ -141,7 +141,7 @@ export default function Customers() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button data-testid="cf-save" onClick={save} className="bg-blue-600 hover:bg-blue-700">Save</Button>
+            <Button data-testid="cf-save" onClick={save} className="bg-[#312E81] hover:bg-[#1E1B4B]">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -152,7 +152,7 @@ export default function Customers() {
           <div>
             <div className="flex flex-wrap gap-2 mb-3">
               {["offer", "thank", "combo", "inactive"].map(t => (
-                <button key={t} onClick={() => changeType(t)} data-testid={`mtype-${t}`} className={`h-8 px-3 rounded-md text-xs font-bold uppercase ${msgType === t ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"}`}>
+                <button key={t} onClick={() => changeType(t)} data-testid={`mtype-${t}`} className={`h-8 px-3 rounded-md text-xs font-bold uppercase ${msgType === t ? "bg-[#312E81] text-white" : "bg-slate-100 text-slate-600"}`}>
                   {t}
                 </button>
               ))}

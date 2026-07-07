@@ -74,7 +74,7 @@ export default function Reports() {
                 <SelectItem value="90">Last 90 days</SelectItem>
               </SelectContent>
             </Select>
-            <Button data-testid="export-csv-btn" onClick={exportCSV} className="h-10 bg-blue-600 hover:bg-blue-700">
+            <Button data-testid="export-csv-btn" onClick={exportCSV} className="h-10 bg-[#312E81] hover:bg-[#1E1B4B]">
               <Download className="w-4 h-4 mr-2" /> Export CSV
             </Button>
           </div>
@@ -218,7 +218,7 @@ function GSTHelper() {
           <Label className="text-xs">GST Rate (%)</Label>
           <Input data-testid="gst-rate" className="w-24 h-10 bg-white" type="number" value={rate} onChange={(e) => setRate(e.target.value)} />
         </div>
-        <Button data-testid="gst-export-btn" onClick={exportGST} className="h-10 bg-blue-600 hover:bg-blue-700">
+        <Button data-testid="gst-export-btn" onClick={exportGST} className="h-10 bg-[#312E81] hover:bg-[#1E1B4B]">
           <Download className="w-4 h-4 mr-2" /> Export CSV
         </Button>
       </div>
@@ -251,7 +251,7 @@ function GSTHelper() {
 }
 
 function Row({ label, value, highlight, bold }) {
-  const c = highlight === "green" ? "text-green-700" : highlight === "red" ? "text-red-700" : highlight === "blue" ? "text-blue-700" : "text-slate-900";
+  const c = highlight === "green" ? "text-green-700" : highlight === "red" ? "text-red-700" : highlight === "blue" ? "text-[#312E81]" : "text-slate-900";
   return (
     <div className={`flex justify-between ${bold ? "font-bold text-base" : ""}`}>
       <span className="text-slate-600">{label}</span>
@@ -270,13 +270,13 @@ function Digest() {
     <div className="space-y-4" data-testid="digest-view">
       <div className="flex gap-2">
         {["week", "month"].map(p => (
-          <button key={p} data-testid={`digest-${p}`} onClick={() => setPeriod(p)} className={`h-10 px-5 rounded-lg text-sm font-bold uppercase ${period === p ? "bg-blue-600 text-white" : "bg-white border border-slate-200 text-slate-600"}`}>
+          <button key={p} data-testid={`digest-${p}`} onClick={() => setPeriod(p)} className={`h-10 px-5 rounded-lg text-sm font-bold uppercase ${period === p ? "bg-[#312E81] text-white" : "bg-white border border-slate-200 text-slate-600"}`}>
             {p}
           </button>
         ))}
       </div>
 
-      <Card className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0">
+      <Card className="p-6 bg-gradient-to-br from-[#312E81] to-[#1E1B4B] text-white border-0">
         <div className="text-[11px] font-bold uppercase tracking-widest opacity-80">Aapki {period === "week" ? "Saptahik" : "Maasik"} Digest</div>
         <div className="font-display text-3xl font-black mt-2">{fmtINR(data.revenue)}</div>
         <div className="text-sm opacity-90 mt-1">Revenue • {data.bills} bills • {data.profit_margin}% margin</div>
@@ -303,7 +303,7 @@ function Digest() {
           {data.top_products.map((p, i) => (
             <div key={i} className="flex justify-between p-2 rounded bg-slate-50">
               <span className="text-sm font-semibold text-slate-900">{i + 1}. {p.name}</span>
-              <span className="font-mono-num text-sm font-bold text-blue-700">{p.qty} units</span>
+              <span className="font-mono-num text-sm font-bold text-[#312E81]">{p.qty} units</span>
             </div>
           ))}
         </div>

@@ -124,7 +124,7 @@ export default function Billing() {
               className="absolute right-1 top-1 h-9 w-9"
               title="Barcode scan karo"
             >
-              <ScanLine className="w-4 h-4 text-blue-600" />
+              <ScanLine className="w-4 h-4 text-[#312E81]" />
             </Button>
           </div>
 
@@ -147,11 +147,11 @@ export default function Billing() {
                 key={p.id}
                 data-testid={`add-product-${p.sku}`}
                 onClick={() => addToCart(p)}
-                className="text-left p-3 bg-white border border-slate-200 rounded-lg hover:border-blue-500 hover:shadow-sm transition-all"
+                className="text-left p-3 bg-white border border-slate-200 rounded-lg hover:border-[#312E81] hover:shadow-sm transition-all"
               >
                 <div className="text-sm font-semibold text-slate-900 line-clamp-1">{p.name}</div>
                 <div className="text-[10px] text-slate-500 mt-0.5">{p.category} • Stock {p.stock}</div>
-                <div className="font-mono-num text-sm font-bold text-blue-700 mt-1">{fmtINR(p.selling_price)}</div>
+                <div className="font-mono-num text-sm font-bold text-[#312E81] mt-1">{fmtINR(p.selling_price)}</div>
               </button>
             ))}
           </div>
@@ -207,7 +207,7 @@ export default function Billing() {
                   data-testid={`mode-${m}`}
                   onClick={() => setMode(m)}
                   className={`h-9 rounded-md text-xs font-bold uppercase transition-colors ${
-                    mode === m ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    mode === m ? "bg-[#312E81] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
                   {m}
@@ -228,7 +228,7 @@ export default function Billing() {
             </div>
           )}
 
-          <Button data-testid="submit-bill-btn" onClick={submit} className="w-full h-11 bg-blue-600 hover:bg-blue-700">
+          <Button data-testid="submit-bill-btn" onClick={submit} className="w-full h-11 bg-[#312E81] hover:bg-[#1E1B4B]">
             <Receipt className="w-4 h-4 mr-2" /> Bill Generate karo
           </Button>
         </Card>

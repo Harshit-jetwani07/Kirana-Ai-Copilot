@@ -65,9 +65,9 @@ export default function Inventory() {
         </div>
         <div className="flex gap-2">
           <Button data-testid="ai-reorder-btn" onClick={openAI} variant="outline" className="h-11">
-            <Sparkles className="w-4 h-4 mr-2 text-blue-600" /> AI Reorder
+            <Sparkles className="w-4 h-4 mr-2 text-[#312E81]" /> AI Reorder
           </Button>
-          <Button data-testid="add-product-btn" onClick={() => { setEditing(null); setForm(empty); setOpen(true); }} className="h-11 bg-blue-600 hover:bg-blue-700">
+          <Button data-testid="add-product-btn" onClick={() => { setEditing(null); setForm(empty); setOpen(true); }} className="h-11 bg-[#312E81] hover:bg-[#1E1B4B]">
             <Plus className="w-4 h-4 mr-2" /> Product
           </Button>
         </div>
@@ -157,7 +157,7 @@ export default function Inventory() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button data-testid="pf-save" onClick={save} className="bg-blue-600 hover:bg-blue-700">Save</Button>
+            <Button data-testid="pf-save" onClick={save} className="bg-[#312E81] hover:bg-[#1E1B4B]">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -165,14 +165,14 @@ export default function Inventory() {
       {/* AI Reorder */}
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-blue-600" /> AI Reorder Suggestions</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-[#312E81]" /> AI Reorder Suggestions</DialogTitle></DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto space-y-2">
             {reorder.length === 0 && <div className="text-sm text-slate-500 py-8 text-center">Sab stock theek hai!</div>}
             {reorder.map(s => (
               <div key={s.product_id} className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                 <div className="flex items-center justify-between mb-1">
                   <div className="font-semibold text-slate-900">{s.name}</div>
-                  <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 font-mono-num">Order {s.recommended_order}</Badge>
+                  <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB] font-mono-num">Order {s.recommended_order}</Badge>
                 </div>
                 <div className="text-xs text-slate-600">{s.reason}</div>
               </div>
@@ -195,7 +195,7 @@ function ProductCard({ p, onEdit, onDelete }) {
           <div className="text-xs text-slate-500">{p.category} • {p.sku}</div>
         </div>
         <div className="text-right">
-          <div className="font-mono-num text-sm font-bold text-blue-700">{fmtINR(p.selling_price)}</div>
+          <div className="font-mono-num text-sm font-bold text-[#312E81]">{fmtINR(p.selling_price)}</div>
           <div className="text-xs text-green-700 font-mono-num">+{margin}%</div>
         </div>
       </div>

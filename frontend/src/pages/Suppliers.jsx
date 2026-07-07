@@ -56,7 +56,7 @@ export default function Suppliers() {
             <div className="text-[10px] font-bold uppercase tracking-widest text-amber-700">Total Due</div>
             <div className="font-mono-num text-xl font-black text-amber-700">{fmtINR(totalDue)}</div>
           </Card>
-          <Button data-testid="add-supplier-btn" onClick={() => setOpen(true)} className="h-11 bg-blue-600 hover:bg-blue-700">
+          <Button data-testid="add-supplier-btn" onClick={() => setOpen(true)} className="h-11 bg-[#312E81] hover:bg-[#1E1B4B]">
             <Plus className="w-4 h-4 mr-2" /> Supplier
           </Button>
         </div>
@@ -83,9 +83,9 @@ export default function Suppliers() {
               <Button data-testid={`reorder-msg-${s.id}`} onClick={() => openMessage(s)} className="h-9 flex-1 whatsapp-btn hover:bg-[#1EBE5D] text-white">
                 <MessageCircle className="w-4 h-4 mr-1.5" /> Reorder msg
               </Button>
-              {s.payment_due > 0 && (
-                <Button data-testid={`pay-supplier-${s.id}`} onClick={() => openPay(s)} variant="outline" className="h-9">Pay</Button>
-              )}
+              <Button data-testid={`pay-supplier-${s.id}`} onClick={() => openPay(s)} variant="outline" className="h-9">
+                {s.payment_due > 0 ? `Pay ₹${Math.round(s.payment_due)}` : "Record Payment"}
+              </Button>
             </div>
           </Card>
         ))}
@@ -103,7 +103,7 @@ export default function Suppliers() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button data-testid="sf-save" onClick={save} className="bg-blue-600 hover:bg-blue-700">Save</Button>
+            <Button data-testid="sf-save" onClick={save} className="bg-[#312E81] hover:bg-[#1E1B4B]">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -136,7 +136,7 @@ export default function Suppliers() {
           <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} data-testid="sp-amount" />
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayOpen(false)}>Cancel</Button>
-            <Button data-testid="sp-submit" onClick={submitPay} className="bg-blue-600 hover:bg-blue-700">Record Payment</Button>
+            <Button data-testid="sp-submit" onClick={submitPay} className="bg-[#312E81] hover:bg-[#1E1B4B]">Record Payment</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

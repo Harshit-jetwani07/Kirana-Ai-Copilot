@@ -1,22 +1,50 @@
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api, getMode, getShopId } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Store, Users, Lock } from "lucide-react";
+import { Store, Users, Lock, Sparkles, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Settings() {
   const [form, setForm] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const mode = getMode();
+  const shopId = getShopId();
+  const isDemo = mode === "demo";
 
   useEffect(() => { api.settings().then(setForm); }, []);
 
   const save = async () => {
     await api.updateSettings(form);
+    window.dispatchEvent(new Event("dukaan-lang-changed"));
     toast.success("Settings save ho gayi");
+  };
+
+  const importSamples = async () => {
+    if (!window.confirm("Sample kirana data import karein? (17 products, 7 customers, 4 suppliers)")) return;
+    setBusy(true);
+    try {
+      await api.importSamples(shopId);
+      toast.success("Sample data import ho gaya!");
+      setTimeout(() => window.location.reload(), 800);
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Import fail");
+    } finally { setBusy(false); }
+  };
+
+  const resetDemo = async () => {
+    if (!window.confirm("Demo data reset karein? Existing demo sales/inventory wapas original ho jaayenge.")) return;
+    setBusy(true);
+    try {
+      await api.resetDemo();
+      toast.success("Demo data reset ho gaya!");
+      setTimeout(() => window.location.reload(), 800);
+    } catch { toast.error("Reset fail"); }
+    finally { setBusy(false); }
   };
 
   if (!form) return <div className="p-8">Loading...</div>;
@@ -65,22 +93,35 @@ export default function Settings() {
           </div>
         </div>
 
-        <Button data-testid="st-save" onClick={save} className="bg-blue-600 hover:bg-blue-700 h-11">Save Settings</Button>
+        <Button data-testid="st-save" onClick={save} className="bg-[#312E81] hover:bg-[#1E1B4B] h-11">Save Settings</Button>
       </Card>
 
-      <Card className="p-5 bg-white border-slate-200">
-        <div className="font-display font-bold text-slate-900 mb-2">Data Backup</div>
-        <p className="text-sm text-slate-600 mb-3">Reports page se CSV export karo. Full backup jald aayega.</p>
+      <Card className="p-5 bg-white border-slate-200" data-testid="data-tools">
+        <div className="font-display font-bold text-slate-900 mb-2">Data Tools</div>
+        <p className="text-sm text-slate-600 mb-4">Reports page se CSV export karo. Sample import / reset options below:</p>
+        <div className="flex flex-wrap gap-2">
+          {!isDemo && (
+            <Button data-testid="import-samples-btn" variant="outline" onClick={importSamples} disabled={busy} className="h-11">
+              <Sparkles className="w-4 h-4 mr-2 text-[#312E81]" /> Import Kirana Sample Data
+            </Button>
+          )}
+          {isDemo && (
+            <Button data-testid="reset-demo-btn" variant="outline" onClick={resetDemo} disabled={busy} className="h-11">
+              <RotateCcw className="w-4 h-4 mr-2 text-amber-600" /> Reset Demo Data
+            </Button>
+          )}
+        </div>
+        {!isDemo && <div className="text-xs text-slate-500 mt-3">Note: Import sirf tab kaam karega jab aapki dukaan empty ho.</div>}
       </Card>
 
       {/* Multi-store ready */}
       <Card className="p-5 bg-white border-slate-200" data-testid="multi-store-section">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Store className="w-4 h-4 text-blue-600" />
+            <Store className="w-4 h-4 text-[#312E81]" />
             <div className="font-display font-bold text-slate-900">Multi-Store Manager</div>
           </div>
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Coming Soon</Badge>
+          <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB]">Coming Soon</Badge>
         </div>
         <p className="text-sm text-slate-600 mb-3">Ek se zyada dukaan chalate ho? Jald hi ek hi login se sabhi stores manage kar paayenge.</p>
 
@@ -104,10 +145,10 @@ export default function Settings() {
       <Card className="p-5 bg-white border-slate-200" data-testid="login-section">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-blue-600" />
+            <Users className="w-4 h-4 text-[#312E81]" />
             <div className="font-display font-bold text-slate-900">Login & Team Access</div>
           </div>
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Coming Soon</Badge>
+          <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB]">Coming Soon</Badge>
         </div>
         <p className="text-sm text-slate-600 mb-3">Apne staff ko cashier ya manager access do. Phone-OTP ya Google se login.</p>
         <div className="grid md:grid-cols-2 gap-3 opacity-70 pointer-events-none">

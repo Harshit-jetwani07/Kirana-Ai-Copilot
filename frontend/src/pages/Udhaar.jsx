@@ -116,7 +116,7 @@ export default function Udhaar() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayOpen(false)}>Cancel</Button>
-            <Button data-testid="submit-payment" onClick={submitPay} className="bg-blue-600 hover:bg-blue-700">Record</Button>
+            <Button data-testid="submit-payment" onClick={submitPay} className="bg-[#312E81] hover:bg-[#1E1B4B]">Record</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -133,7 +133,7 @@ export default function Udhaar() {
                   key={t}
                   data-testid={`tone-${t}`}
                   onClick={() => changeTone(t)}
-                  className={`h-9 rounded-md text-xs font-bold uppercase ${tone === t ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-600"}`}
+                  className={`h-9 rounded-md text-xs font-bold uppercase ${tone === t ? "bg-[#312E81] text-white" : "bg-slate-100 text-slate-600"}`}
                 >{t}</button>
               ))}
             </div>

@@ -1,21 +1,34 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ---------- Premium Theme ---------- */
+/* Palette:
+   - Background: warm cream (#FBF7F0) — Indian warmth, distinct from generic white
+   - Primary: deep indigo (#312E81 / indigo-900) — sophisticated
+   - Accent: saffron (#EA580C) — Indian identity, energy
+   - Success: emerald (#059669) — money/growth
+   - Ink: near-black slate for high contrast
+*/
+
 body {
     margin: 0;
-    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: #FAFAFA;
-    color: #0F172A;
+    background: #FBF7F0;
+    color: #0B0B12;
 }
 
 h1, h2, h3, h4, .font-display {
-    font-family: 'Manrope', sans-serif;
-    letter-spacing: -0.02em;
+    font-family: 'Fraunces', 'Manrope', serif;
+    letter-spacing: -0.025em;
+    font-optical-sizing: auto;
+}
+
+.font-serif-display {
+    font-family: 'Fraunces', serif;
+    font-optical-sizing: auto;
 }
 
 .font-mono-num {
@@ -29,64 +42,114 @@ code {
 
 @layer base {
     :root {
-        --background: 0 0% 98%;
-        --foreground: 222 47% 11%;
+        --background: 36 43% 96%;           /* #FBF7F0 warm cream */
+        --foreground: 240 24% 7%;            /* #0B0B12 near-black */
         --card: 0 0% 100%;
-        --card-foreground: 222 47% 11%;
+        --card-foreground: 240 24% 7%;
         --popover: 0 0% 100%;
-        --popover-foreground: 222 47% 11%;
-        --primary: 221 83% 53%;
+        --popover-foreground: 240 24% 7%;
+        --primary: 244 55% 33%;              /* deep indigo #312E81 */
         --primary-foreground: 0 0% 100%;
-        --secondary: 210 40% 96%;
-        --secondary-foreground: 222 47% 11%;
-        --muted: 210 40% 96%;
-        --muted-foreground: 215 16% 47%;
-        --accent: 210 40% 96%;
-        --accent-foreground: 222 47% 11%;
-        --destructive: 0 84% 60%;
+        --secondary: 36 30% 92%;             /* cream deeper */
+        --secondary-foreground: 240 24% 7%;
+        --muted: 36 30% 92%;
+        --muted-foreground: 240 8% 40%;
+        --accent: 22 92% 48%;                /* saffron #EA580C */
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 72% 51%;
         --destructive-foreground: 0 0% 100%;
-        --border: 214 32% 91%;
-        --input: 214 32% 91%;
-        --ring: 221 83% 53%;
-        --chart-1: 221 83% 53%;
-        --chart-2: 142 71% 45%;
-        --chart-3: 38 92% 50%;
-        --chart-4: 0 84% 60%;
-        --chart-5: 262 83% 58%;
+        --border: 36 20% 88%;
+        --input: 36 20% 88%;
+        --ring: 244 55% 33%;
+        --chart-1: 244 55% 33%;
+        --chart-2: 158 84% 30%;
+        --chart-3: 22 92% 48%;
+        --chart-4: 0 72% 51%;
+        --chart-5: 262 60% 45%;
         --radius: 0.6rem;
+
+        /* Brand tokens */
+        --ink: #0B0B12;
+        --cream: #FBF7F0;
+        --cream-deep: #F3EDDF;
+        --indigo: #312E81;
+        --indigo-deep: #1E1B4B;
+        --saffron: #EA580C;
+        --saffron-soft: #FDBA74;
+        --emerald: #059669;
     }
 }
 
 @layer base {
-    * {
-        @apply border-border;
-    }
-    body {
-        @apply bg-background text-foreground;
-    }
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground; }
 }
 
-/* Custom scrollbar */
+/* Scrollbar */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar-thumb { background: #d6cfbf; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #a89f8b; }
 
-/* Utility */
-.whatsapp-btn {
-    background-color: #25D366;
-    color: white;
+/* Selection */
+::selection { background: #FDBA74; color: #1E1B4B; }
+
+/* Text noise/grain texture on premium surfaces */
+.grain {
+    position: relative;
 }
-.whatsapp-btn:hover {
-    background-color: #1EBE5D;
+.grain::after {
+    content: "";
+    position: absolute; inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
+
+/* Utility for warm dot-grid backdrops */
+.dot-grid {
+    background-image: radial-gradient(circle, #E7DFCE 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+/* WhatsApp accent kept */
+.whatsapp-btn { background-color: #25D366; color: white; }
+.whatsapp-btn:hover { background-color: #1EBE5D; }
 
 .hover-lift {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.25s ease;
 }
 .hover-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px -8px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 12px 28px -12px rgba(30, 27, 75, 0.18);
+}
+
+/* Indigo brand button variant */
+.btn-brand {
+    background: var(--indigo);
+    color: white;
+    transition: background 0.15s ease;
+}
+.btn-brand:hover { background: var(--indigo-deep); }
+
+.btn-saffron {
+    background: var(--saffron);
+    color: white;
+}
+.btn-saffron:hover { background: #C2410C; }
+
+/* Chip / pill utility */
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 
 @layer base {
@@ -95,17 +158,13 @@ code {
     }
 }
 
-/* Print styles for receipt */
+/* Print */
 @media print {
     body * { visibility: hidden; }
     .print-receipt, .print-receipt * { visibility: visible; }
     .print-receipt {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        padding: 20px;
-        background: white;
+        position: absolute; left: 0; top: 0; width: 100%;
+        padding: 20px; background: white;
     }
     .no-print { display: none !important; }
 }

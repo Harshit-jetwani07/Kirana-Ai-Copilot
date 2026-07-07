@@ -53,3 +53,71 @@ Mobile-first web app for Indian kirana stores. Manages billing, inventory, profi
 ### Not Done (by design)
 - WhatsApp Business API auto-send (kept as wa.me deep links)
 - SMS fallback
+
+## Feb 2026 - Enhancements Round 3 (Production Feel)
+- **Welcome / first-run screen** at /welcome — App name "Dukaan AI Copilot", tagline, Demo card (Sharma Kirana Store with real stats ₹1,065 / ₹139 / ₹4,340 / 7 customers) with "Open Demo Store" CTA, Live card "Apni Dukaan Banao" with "Create My Shop" CTA.
+- **Shop Setup form** — shop_name, owner_name, phone, city/address, business_type dropdown, GST optional, language. Saves via PUT /api/settings, then routes to dashboard. Persistence via localStorage flags dukaan_onboarded + dukaan_mode.
+- **Rich production header** (sticky, glass-morphism backdrop-blur): shop name from settings, DEMO badge (when mode=demo), Saved / Syncing sync indicator with green/amber dot, notifications bell with red count badge, popover listing Aaj ka kaam (low-stock/udhaar/supplier/expiry) polling every 45s, owner-initials avatar (blue gradient).
+- **Aaj ka Workflow section** on Dashboard: 4-step visual card (Billing → Inventory Update → Udhaar Reminder → Supplier Reorder). Steps show green (done) / blue (active) / slate (idle) state with metrics ("10 bills aaj", "7 low stock", "4 customers", "₹20,500 due"). Each step routes to the relevant page.
+- **Switch Shop** action in sidebar clears localStorage and returns to /welcome.
+- **Business type** added to ShopSettings model in backend.
+
+## Feb 2026 - Major Refactor: Multi-Shop SaaS Product
+
+### Architecture Change
+- **Multi-shop backend** via `X-Shop-Id` header (no auth, localStorage-based). Every collection (products, customers, suppliers, sales, credit_payments, purchase_orders, write_offs, supplier_payments) now has `shop_id`. All CRUD & analytics endpoints filter by shop_id via `Depends(shop_id_dep)`.
+- New `shops` collection stores shop profile (name, owner, phone, address, GST, business_type, language, mode).
+- Demo shop has fixed id `"demo"` (auto-seeded on startup). Live shops get UUIDs.
+- Existing data migrated to `shop_id="demo"` via startup routine.
+
+### Frontend
+- `/` = **Landing page**: hero + product mockup, problem section (6 cards), features (9 cards), workflow strip (6 steps), social proof (dark card with metrics), final CTA. Sticky top-nav with Start Free / View Demo.
+- `/onboarding` = 2-step **shop setup wizard** (details → empty vs sample data choice with "Popular" badge on samples).
+- `/dashboard` etc. protected by `RequireShop` — redirects to `/` if no shop_id in localStorage.
+- Landing → "View Demo" sets shop_id=demo, mode=demo.
+- Landing → "Start Free" → onboarding → creates shop via POST /api/shops with optional seed_samples flag.
+- Layout header: `Demo` (amber) vs `My Shop` (green) badge based on mode.
+- **Empty state Dashboard**: Getting Started hero + 4 CTA cards (Create first product, first bill, first customer, add supplier) + Import Sample Data fallback.
+- Settings adds `Import Kirana Sample Data` button (live shops only, empty-only) and `Reset Demo Data` button (demo shop only).
+- api.js: axios interceptor injects `X-Shop-Id` header from localStorage on every request.
+
+### Endpoints Added
+- POST /api/shops — create shop (with optional seed)
+- GET /api/shops/{id}
+- PUT /api/shops/{id}
+- POST /api/shops/{id}/import-samples
+- POST /api/shops/demo/reset
+- All existing endpoints now scoped by X-Shop-Id header.
+
+### Verified
+- Demo shop preserved (17 products, 23 sales), new shops isolated, sample import works (empty → 17 products/7 customers/4 suppliers/18 sales), product creation works, dashboard counts correct.
+
+## Feb 2026 - Final Polish (Contest Submission)
+
+### Visual Theme Overhaul (Premium)
+- **Palette**: warm cream (#FBF7F0) background, deep indigo (#312E81 → #1E1B4B) primary, saffron (#EA580C) accent, emerald success. Distinctive Indian SMB feel — not generic blue-SaaS-slop.
+- **Typography**: **Fraunces** (chunky editorial serif) for display headings + **Manrope** for body + IBM Plex Mono for numerics. Italic Fraunces used on accent words ("India's", "real dard", "complete", "digital").
+- Dot-grid backdrop on landing hero. Grain texture (SVG noise) on premium dark surfaces. Custom orange arrows in workflow strip.
+- Bulk migration of all `bg-blue-*`/`text-blue-*` classes across every page to the new palette via a Python sed sweep.
+
+### First-run polish
+- Browser title: `Dukaan AI Copilot | AI POS for Kirana Stores`. Rich meta description + OG tags.
+- Landing CTAs: Primary `Create My Shop`, Secondary `Open Demo Store` (swapped as requested).
+- Product-preview mockup on landing shows Sales, Low Stock, Udhaar Reminder (with WhatsApp CTA), AI Advice card — all in one glance.
+
+### Demo & My Shop Distinction
+- **Demo mode banner** (orange gradient strip below header): "You're viewing sample data. Create your own shop to use real data." with Create My Shop link that clears localStorage first.
+- **My Shop mode** shows green `My Shop` badge, no banner, no "Demo" wording anywhere.
+
+### Empty Setup Checklist (5 items)
+- Add first product / Create first bill / Add first customer / Add supplier / **Import sample products (optional)** — the 5th is featured with saffron accent.
+
+### Language Toggle (functional)
+- `LangProvider` context + `useLang()` hook + labels dict for Hinglish / हिंदी / English covering greetings, KPI labels, workflow, notifications, sync indicator.
+- Settings save emits `dukaan-lang-changed` window event → Layout re-reads settings → UI updates live.
+
+### Supplier Payments
+- Pay button now always visible on supplier cards (shows `Pay ₹XXX` when due > 0, `Record Payment` when 0). Both open the amount dialog.
+
+### README
+- Rewrote README.md with landing/onboarding flow, shop_id architecture, demo vs live mode, sample import.
