@@ -1,0 +1,99 @@
+{
+  "project_name": "Dukaan AI Copilot",
+  "theme_and_archetype": {
+    "domain": "Retail/SMB/B2B Productivity",
+    "theme": "Light",
+    "archetype": "Archetype 4 (Swiss & High-Contrast) tailored for Soft Utility",
+    "reasoning": "Indian Kirana and retail shops need maximum legibility, trust (clear financial data), and approachability. High-contrast Swiss ensures numbers (Udhaar/Sales) are hyper-readable, while Soft Utility fonts keep the app friendly for non-tech-savvy users."
+  },
+  "colors": {
+    "background": {
+      "main": "#FAFAFA",
+      "card": "#FFFFFF",
+      "glass": "bg-white/70 backdrop-blur-xl"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "tertiary": "#94A3B8"
+    },
+    "brand": {
+      "primary": "#2563EB",
+      "primary_hover": "#1D4ED8"
+    },
+    "accents": {
+      "whatsapp_green": "#25D366",
+      "whatsapp_hover": "#1EBE5D",
+      "danger_red": "#DC2626",
+      "danger_bg": "#FEF2F2",
+      "success_green": "#16A34A",
+      "success_bg": "#F0FDF4",
+      "warning_amber": "#F59E0B",
+      "warning_bg": "#FFFBEB"
+    }
+  },
+  "typography": {
+    "strategy": "Soft Utility (Friendly + Clean)",
+    "heading_font": "Manrope",
+    "body_font": "IBM Plex Sans",
+    "hierarchy": {
+      "h1": "text-3xl sm:text-4xl font-black tracking-tight text-[#0F172A]",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A]",
+      "h3": "text-xl sm:text-2xl font-bold text-[#0F172A]",
+      "body": "text-base text-[#475569] leading-relaxed",
+      "small_label": "text-xs font-bold uppercase tracking-[0.2em] text-[#64748B]",
+      "financial_number": "font-mono font-semibold tracking-tight tabular-nums"
+    }
+  },
+  "layout_and_spacing": {
+    "philosophy": "Mobile-first, dense information architecture but generous padding to avoid misclicks by shopkeepers.",
+    "grid_system": "Bento Grid Mode B (Control Room) for Dashboard. Mobile-first grid-cols-1, scaling to grid-cols-4 or grid-cols-12 on desktop.",
+    "spacing_scale": "p-4 for mobile cards, p-6 to p-8 for desktop cards. gap-4 for dense lists, gap-6 for dashboard widgets."
+  },
+  "component_styles": {
+    "cards": "Flat background (bg-white), 1px subtle border (border-slate-200), no shadow default. Hover: slight lift (-translate-y-1) and shadow-md.",
+    "buttons": "Rounded-lg for approachability. Primary buttons use Trust Blue. WhatsApp actions MUST use whatsapp_green with text-white.",
+    "inputs": "Shadcn inputs heavily customized with h-12 (larger touch targets), border-slate-300, focus:ring-2 focus:ring-brand-primary focus:border-brand-primary.",
+    "badges": "Rounded-full px-2.5 py-0.5 text-xs font-semibold. Status colors: Red (Udhaar due / Dead stock), Green (Paid / Fast stock), Amber (Low stock).",
+    "bottom_nav": "Fixed bottom-0 left-0 w-full h-16 bg-white border-t border-slate-200 flex justify-around items-center z-50. Hidden on md (desktop).",
+    "sidebar": "Hidden on mobile. Fixed w-64 h-screen border-r border-slate-200 bg-white left-0 top-0 on md (desktop)."
+  },
+  "mobile_first_patterns": {
+    "pos_billing": "Wizard flow. Large numeric keypad targets. Barcode scanner button prominent.",
+    "tables": "Convert horizontal tables to vertical Card Lists on mobile to prevent horizontal scrolling.",
+    "actions": "Floating Action Button (FAB) or sticky bottom bars for main actions (e.g., 'Add Bill', 'Add Udhaar')."
+  },
+  "icons_and_assets": {
+    "library": "lucide-react (default)",
+    "usage": "Use icons for every menu item and action to assist non-reading/fast-scanning shopkeepers."
+  },
+  "testing_requirements": {
+    "data_testid": "ALL interactive elements MUST have data-testid attributes (e.g., data-testid='whatsapp-reminder-button', data-testid='dashboard-add-bill')."
+  },
+  "media_urls": {
+    "empty_inventory": {
+      "url": "https://images.pexels.com/photos/33733875/pexels-photo-33733875.jpeg",
+      "description": "Minimalist display of three boxed products on a white shelf. Use for Empty State in Inventory."
+    },
+    "shop_illustration": {
+      "url": "https://images.unsplash.com/photo-1634973357973-f2ed2657db3c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzl8MHwxfHNlYXJjaHwxfHxzdG9yZSUyMHJldGFpbCUyMHZlY3RvciUyMGlsbHVzdHJhdGlvbnxlbnwwfHx8fDE3ODI1ODA4NDN8MA&ixlib=rb-4.1.0&q=85",
+      "description": "A small toy store with a green background. Use for welcome screen or empty CRM state."
+    },
+    "user_avatar": {
+      "url": "https://images.unsplash.com/photo-1706694668136-ce3eac60643f",
+      "description": "Cartoon character avatar. Use as placeholder for Customer profiles in CRM/Udhaar ledger."
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build the application using standard React (.js/.jsx) with Tailwind CSS and Shadcn UI components. Do not use TypeScript (.tsx/.ts).",
+    "Prioritize Mobile-First design: Ensure the bottom navigation bar is visible and functional on mobile screens (< 768px).",
+    "Translate critical labels into Hinglish as requested: 'Aaj ka kaam', 'Udhaar', 'Stock khatam hone wala hai', 'Dukaan AI Copilot'.",
+    "Use 'IBM Plex Sans' for financial digits and apply 'tabular-nums' to ensure proper alignment of decimal points in ledgers.",
+    "The Dashboard must have an 'AI Business Advisor' panel summarizing insights in Hinglish.",
+    "For WhatsApp reminders, use the exact WhatsApp Green color (#25D366) for the button background and text-white.",
+    "Implement 'data-testid' on all interactive elements (buttons, inputs, links) without fail.",
+    "Pre-seed the app with Indian kirana demo data (e.g., Aashirvaad Atta, Parle-G, local names like 'Ramesh Store' or 'Suresh Udhaar').",
+    "Ensure high contrast ratios: Do not use light gray text on white background. Rely on high-contrast text colors for accessibility.",
+    "Convert wide tables into Mobile-friendly Card/List views on small screens."
+  ]
+}
