@@ -37,3 +37,19 @@ Mobile-first web app for Indian kirana stores. Manages billing, inventory, profi
 - WhatsApp Business API auto-send (currently uses wa.me link)
 - GST filing helper
 - SMS reminders fallback
+
+## Feb 2026 - Enhancements Round 2
+
+### P1 Delivered
+- Barcode camera scanner in Billing (html5-qrcode) with SKU/name auto-add to cart
+- Print-friendly receipt (@media print CSS, print-receipt class, no-print on buttons/dialog chrome)
+- Dead-stock write-off flow in Inventory (POST /api/products/{id}/writeoff records loss to write_offs collection, sets stock=0, movement=dead)
+- Weekly/Monthly Digest inside Reports (GET /api/reports/digest?period=week|month) with best day, top 3 products, profit margin, pending udhaar
+
+### P2 Delivered (contest-safe)
+- GST Helper tab in Reports (GET /api/reports/gst?days=&rate=) with total_sales, taxable_sales, net_sales, gst_collected, purchase_gst, net_gst_liability, per-mode breakdown, and CSV export. Non-filing disclaimer shown.
+- Multi-Store Manager + Login & Team Access sections in Settings — disabled, "Coming Soon" badges, single-shop demo mode preserved
+
+### Not Done (by design)
+- WhatsApp Business API auto-send (kept as wa.me deep links)
+- SMS fallback

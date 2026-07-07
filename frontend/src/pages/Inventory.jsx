@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, AlertTriangle, Sparkles, Trash2, Edit, Package } from "lucide-react";
+import { Plus, Search, AlertTriangle, Sparkles, Trash2, Edit, Package, Archive } from "lucide-react";
 import { toast } from "sonner";
 
 const empty = { name: "", category: "", sku: "", purchase_price: 0, selling_price: 0, stock: 0, min_stock: 5, unit: "pcs" };
@@ -35,6 +35,13 @@ export default function Inventory() {
   const del = async (id) => {
     if (!window.confirm("Delete product?")) return;
     await api.deleteProduct(id); load(); toast.success("Delete ho gaya");
+  };
+
+  const writeoff = async (p) => {
+    if (!window.confirm(`Write-off "${p.name}" (${p.stock} ${p.unit})? Yeh dead-stock loss record karega.`)) return;
+    const r = await api.writeoff(p.id, "dead_stock");
+    toast.success(`Written off. Loss: ₹${Math.round(r.loss_value)}`);
+    load();
   };
 
   const openEdit = (p) => {
@@ -121,6 +128,11 @@ export default function Inventory() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Button data-testid={`edit-${p.sku}`} size="icon" variant="ghost" onClick={() => openEdit(p)}><Edit className="w-3.5 h-3.5" /></Button>
+                    {p.movement === "slow" && p.stock > 0 && (
+                      <Button data-testid={`writeoff-${p.sku}`} size="icon" variant="ghost" onClick={() => writeoff(p)} title="Write-off dead stock">
+                        <Archive className="w-3.5 h-3.5 text-amber-600" />
+                      </Button>
+                    )}
                     <Button data-testid={`delete-${p.sku}`} size="icon" variant="ghost" onClick={() => del(p.id)}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
                   </td>
                 </tr>

@@ -348,6 +348,30 @@ async def adjust_stock(pid: str, delta: int):
     return {"ok": True}
 
 
+@api_router.post("/products/{pid}/writeoff")
+async def writeoff_product(pid: str, reason: str = "dead_stock"):
+    prod = await db.products.find_one({"_id": pid})
+    if not prod:
+        raise HTTPException(404, "Product not found")
+    loss = prod.get("purchase_price", 0) * prod.get("stock", 0)
+    await db.write_offs.insert_one({
+        "_id": new_id(),
+        "product_id": pid,
+        "product_name": prod["name"],
+        "qty": prod.get("stock", 0),
+        "loss_value": loss,
+        "reason": reason,
+        "created_at": now_iso(),
+    })
+    await db.products.update_one({"_id": pid}, {"$set": {"stock": 0, "movement": "dead"}})
+    return {"ok": True, "loss_value": loss}
+
+
+@api_router.get("/writeoffs")
+async def list_writeoffs():
+    return await db.write_offs.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+
+
 # ---------- Routes: Customers ----------
 @api_router.get("/customers")
 async def list_customers(q: Optional[str] = None, tag: Optional[str] = None):
@@ -792,6 +816,86 @@ async def reports_summary(days: int = 7):
         "top_selling": top_selling,
         "low_margin": low_margin,
         "slow_moving": [{"name": p["name"], "stock": p["stock"], "category": p["category"]} for p in slow_moving],
+    }
+
+
+@api_router.get("/reports/gst")
+async def reports_gst(days: int = 30, rate: float = 5.0):
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    sales = await db.sales.find({"created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
+    total_sales = sum(s["total"] for s in sales)
+    # Split by category-inferred taxable/non-taxable — assume all taxable for demo
+    taxable_sales = total_sales
+    # If rate is applied on top: GST = taxable * rate/(100+rate). If inclusive.
+    gst_collected = round(taxable_sales * rate / (100 + rate), 2)
+    net_sales = round(taxable_sales - gst_collected, 2)
+
+    # Purchase GST estimate (from purchase_orders)
+    pos = await db.purchase_orders.find({"created_at": {"$gte": since}}, {"_id": 0}).to_list(500)
+    purchase_total = sum(po.get("total_cost", 0) for po in pos)
+    purchase_gst = round(purchase_total * rate / (100 + rate), 2)
+
+    net_gst_liability = round(gst_collected - purchase_gst, 2)
+
+    # Per-mode breakdown
+    modes = {"cash": 0.0, "upi": 0.0, "card": 0.0, "udhaar": 0.0}
+    for s in sales:
+        modes[s["payment_mode"]] = modes.get(s["payment_mode"], 0) + s["total"]
+
+    return {
+        "period_days": days,
+        "rate": rate,
+        "total_sales": round(total_sales, 2),
+        "taxable_sales": round(taxable_sales, 2),
+        "net_sales": net_sales,
+        "gst_collected": gst_collected,
+        "purchase_total": round(purchase_total, 2),
+        "purchase_gst": purchase_gst,
+        "net_gst_liability": net_gst_liability,
+        "bills_count": len(sales),
+        "payment_modes": modes,
+        "note": "Estimated GST calculation. For actual filing consult your CA.",
+    }
+
+
+@api_router.get("/reports/digest")
+async def reports_digest(period: str = "week"):
+    days = 7 if period == "week" else 30
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    sales = await db.sales.find({"created_at": {"$gte": since}}, {"_id": 0}).to_list(2000)
+    revenue = sum(s["total"] for s in sales)
+    profit = sum(s["profit"] for s in sales)
+
+    # Best day
+    per_day = {}
+    for s in sales:
+        d = s["created_at"][:10]
+        per_day.setdefault(d, {"revenue": 0.0, "bills": 0})
+        per_day[d]["revenue"] += s["total"]
+        per_day[d]["bills"] += 1
+    best_day = max(per_day.items(), key=lambda x: x[1]["revenue"]) if per_day else (None, {"revenue": 0, "bills": 0})
+
+    # Top product
+    counter = {}
+    for s in sales:
+        for it in s["items"]:
+            counter[it["name"]] = counter.get(it["name"], 0) + it["qty"]
+    top = sorted(counter.items(), key=lambda x: x[1], reverse=True)[:3]
+
+    customers = await db.customers.find({}, {"_id": 0}).to_list(500)
+    new_udhaar = sum(c["pending_amount"] for c in customers)
+
+    return {
+        "period": period,
+        "days": days,
+        "revenue": round(revenue, 2),
+        "profit": round(profit, 2),
+        "bills": len(sales),
+        "avg_bill": round(revenue / max(len(sales), 1), 2),
+        "profit_margin": round(profit / max(revenue, 1) * 100, 1),
+        "best_day": {"date": best_day[0], "revenue": round(best_day[1]["revenue"], 2), "bills": best_day[1]["bills"]},
+        "top_products": [{"name": n, "qty": q} for n, q in top],
+        "pending_udhaar": round(new_udhaar, 2),
     }
 
 

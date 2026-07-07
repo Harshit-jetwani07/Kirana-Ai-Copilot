@@ -4,7 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Store, Users, Lock } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Settings() {
@@ -69,6 +71,61 @@ export default function Settings() {
       <Card className="p-5 bg-white border-slate-200">
         <div className="font-display font-bold text-slate-900 mb-2">Data Backup</div>
         <p className="text-sm text-slate-600 mb-3">Reports page se CSV export karo. Full backup jald aayega.</p>
+      </Card>
+
+      {/* Multi-store ready */}
+      <Card className="p-5 bg-white border-slate-200" data-testid="multi-store-section">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Store className="w-4 h-4 text-blue-600" />
+            <div className="font-display font-bold text-slate-900">Multi-Store Manager</div>
+          </div>
+          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Coming Soon</Badge>
+        </div>
+        <p className="text-sm text-slate-600 mb-3">Ek se zyada dukaan chalate ho? Jald hi ek hi login se sabhi stores manage kar paayenge.</p>
+
+        <div className="grid md:grid-cols-2 gap-3 opacity-70 pointer-events-none">
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+            <Label className="text-xs">Active Store</Label>
+            <Select value="current" disabled>
+              <SelectTrigger data-testid="store-switcher" className="mt-1 bg-white"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current">Sharma General Store (current)</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="mt-2 flex items-center gap-1 text-xs text-slate-500"><Lock className="w-3 h-3" /> Currently single-shop demo mode</div>
+          </div>
+          <Button data-testid="add-store-btn" variant="outline" disabled className="h-11 self-end">
+            <Store className="w-4 h-4 mr-2" /> Add New Store
+          </Button>
+        </div>
+      </Card>
+
+      <Card className="p-5 bg-white border-slate-200" data-testid="login-section">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-blue-600" />
+            <div className="font-display font-bold text-slate-900">Login & Team Access</div>
+          </div>
+          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Coming Soon</Badge>
+        </div>
+        <p className="text-sm text-slate-600 mb-3">Apne staff ko cashier ya manager access do. Phone-OTP ya Google se login.</p>
+        <div className="grid md:grid-cols-2 gap-3 opacity-70 pointer-events-none">
+          <div>
+            <Label className="text-xs">Phone / Email</Label>
+            <Input disabled placeholder="+91 98765 43210" className="bg-white" />
+          </div>
+          <div>
+            <Label className="text-xs">Role</Label>
+            <Select value="owner" disabled>
+              <SelectTrigger className="bg-white"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner">Owner (you)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-1 text-xs text-slate-500"><Lock className="w-3 h-3" /> Currently single-shop demo. Auth aayega jald.</div>
       </Card>
     </div>
   );

@@ -27,6 +27,10 @@ export const api = {
   aiReminder: (customer_id, tone) => client.post("/ai/reminder", { customer_id, tone }).then(r => r.data),
   aiSupplierMessage: (sid) => client.get(`/ai/supplier-message/${sid}`).then(r => r.data),
   reports: (days = 7) => client.get("/reports/summary", { params: { days } }).then(r => r.data),
+  gstReport: (days = 30, rate = 5) => client.get("/reports/gst", { params: { days, rate } }).then(r => r.data),
+  digest: (period = "week") => client.get("/reports/digest", { params: { period } }).then(r => r.data),
+  writeoff: (pid, reason = "dead_stock") => client.post(`/products/${pid}/writeoff`, null, { params: { reason } }).then(r => r.data),
+  writeoffs: () => client.get("/writeoffs").then(r => r.data),
   settings: () => client.get("/settings").then(r => r.data),
   updateSettings: (s) => client.put("/settings", s).then(r => r.data),
 };

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Search, Plus, Minus, Trash2, Receipt, X, Printer } from "lucide-react";
+import { Search, Plus, Minus, Trash2, Receipt, X, Printer, ScanLine } from "lucide-react";
 import { toast } from "sonner";
+import BarcodeScanner from "@/components/BarcodeScanner";
 
 const QUICK = ["Amul Milk", "Parle-G", "Maggi", "Sugar", "Tata Salt", "Bread"];
 
@@ -21,6 +22,7 @@ export default function Billing() {
   const [mode, setMode] = useState("cash");
   const [customerId, setCustomerId] = useState("");
   const [receipt, setReceipt] = useState(null);
+  const [scanOpen, setScanOpen] = useState(false);
 
   useEffect(() => {
     api.products().then(setProducts);
@@ -80,6 +82,19 @@ export default function Billing() {
 
   const quickPicks = products.filter(p => QUICK.some(q => p.name.toLowerCase().startsWith(q.toLowerCase()))).slice(0, 6);
 
+  const handleScan = (decoded) => {
+    const clean = String(decoded).trim();
+    const found = products.find(p => p.sku.toLowerCase() === clean.toLowerCase() || p.name.toLowerCase().includes(clean.toLowerCase()));
+    if (found) {
+      addToCart(found);
+      toast.success(`${found.name} added`);
+    } else {
+      setQ(clean);
+      toast.info(`Barcode "${clean}" — search se dhundo`);
+    }
+    setScanOpen(false);
+  };
+
   return (
     <div className="space-y-4" data-testid="billing-page">
       <div className="flex items-end justify-between flex-wrap gap-3">
@@ -97,10 +112,20 @@ export default function Billing() {
             <Input
               data-testid="product-search-input"
               placeholder="Search product name, SKU..."
-              className="pl-9 h-11 bg-white"
+              className="pl-9 pr-12 h-11 bg-white"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
+            <Button
+              data-testid="open-scanner-btn"
+              size="icon"
+              variant="ghost"
+              onClick={() => setScanOpen(true)}
+              className="absolute right-1 top-1 h-9 w-9"
+              title="Barcode scan karo"
+            >
+              <ScanLine className="w-4 h-4 text-blue-600" />
+            </Button>
           </div>
 
           {!q && quickPicks.length > 0 && (
@@ -212,13 +237,14 @@ export default function Billing() {
       {/* Receipt Dialog */}
       <Dialog open={!!receipt} onOpenChange={() => setReceipt(null)}>
         <DialogContent data-testid="receipt-dialog" className="max-w-md">
-          <DialogHeader><DialogTitle>Receipt / Rasid</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="no-print">Receipt / Rasid</DialogTitle></DialogHeader>
           {receipt && (
-            <div className="text-sm">
+            <div className="text-sm print-receipt">
               <div className="text-center pb-3 border-b border-dashed">
                 <div className="font-display font-black text-lg">Sharma General Store</div>
                 <div className="text-xs text-slate-500">Shop No. 12, Main Market, Delhi</div>
                 <div className="text-xs text-slate-500">Bill #{receipt.id?.slice(0, 8).toUpperCase()}</div>
+                <div className="text-xs text-slate-500">{new Date(receipt.created_at).toLocaleString("en-IN")}</div>
               </div>
               <div className="py-3 space-y-1.5 font-mono-num">
                 {receipt.items.map((it, i) => (
@@ -234,16 +260,19 @@ export default function Billing() {
                 {receipt.tax > 0 && <div className="flex justify-between"><span>Tax</span><span>{fmtINR(receipt.tax)}</span></div>}
                 <div className="flex justify-between font-bold text-base"><span>Total</span><span>{fmtINR(receipt.total)}</span></div>
                 <div className="flex justify-between text-xs text-slate-500 pt-1"><span>Payment</span><span className="uppercase">{receipt.payment_mode}</span></div>
+                {receipt.customer_name && <div className="flex justify-between text-xs text-slate-500"><span>Customer</span><span>{receipt.customer_name}</span></div>}
               </div>
               <div className="text-center text-xs text-slate-500 mt-4">Dhanyawad! Phir aaiye.</div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="no-print">
             <Button data-testid="print-receipt-btn" variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-2" /> Print</Button>
             <Button data-testid="close-receipt-btn" onClick={() => setReceipt(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BarcodeScanner open={scanOpen} onClose={() => setScanOpen(false)} onScan={handleScan} />
     </div>
   );
 }
