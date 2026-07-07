@@ -91,3 +91,33 @@ Mobile-first web app for Indian kirana stores. Manages billing, inventory, profi
 
 ### Verified
 - Demo shop preserved (17 products, 23 sales), new shops isolated, sample import works (empty → 17 products/7 customers/4 suppliers/18 sales), product creation works, dashboard counts correct.
+
+## Feb 2026 - Final Polish (Contest Submission)
+
+### Visual Theme Overhaul (Premium)
+- **Palette**: warm cream (#FBF7F0) background, deep indigo (#312E81 → #1E1B4B) primary, saffron (#EA580C) accent, emerald success. Distinctive Indian SMB feel — not generic blue-SaaS-slop.
+- **Typography**: **Fraunces** (chunky editorial serif) for display headings + **Manrope** for body + IBM Plex Mono for numerics. Italic Fraunces used on accent words ("India's", "real dard", "complete", "digital").
+- Dot-grid backdrop on landing hero. Grain texture (SVG noise) on premium dark surfaces. Custom orange arrows in workflow strip.
+- Bulk migration of all `bg-blue-*`/`text-blue-*` classes across every page to the new palette via a Python sed sweep.
+
+### First-run polish
+- Browser title: `Dukaan AI Copilot | AI POS for Kirana Stores`. Rich meta description + OG tags.
+- Landing CTAs: Primary `Create My Shop`, Secondary `Open Demo Store` (swapped as requested).
+- Product-preview mockup on landing shows Sales, Low Stock, Udhaar Reminder (with WhatsApp CTA), AI Advice card — all in one glance.
+
+### Demo & My Shop Distinction
+- **Demo mode banner** (orange gradient strip below header): "You're viewing sample data. Create your own shop to use real data." with Create My Shop link that clears localStorage first.
+- **My Shop mode** shows green `My Shop` badge, no banner, no "Demo" wording anywhere.
+
+### Empty Setup Checklist (5 items)
+- Add first product / Create first bill / Add first customer / Add supplier / **Import sample products (optional)** — the 5th is featured with saffron accent.
+
+### Language Toggle (functional)
+- `LangProvider` context + `useLang()` hook + labels dict for Hinglish / हिंदी / English covering greetings, KPI labels, workflow, notifications, sync indicator.
+- Settings save emits `dukaan-lang-changed` window event → Layout re-reads settings → UI updates live.
+
+### Supplier Payments
+- Pay button now always visible on supplier cards (shows `Pay ₹XXX` when due > 0, `Record Payment` when 0). Both open the amount dialog.
+
+### README
+- Rewrote README.md with landing/onboarding flow, shop_id architecture, demo vs live mode, sample import.

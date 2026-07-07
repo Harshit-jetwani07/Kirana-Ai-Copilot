@@ -41,14 +41,14 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-4" data-testid="onboarding-page">
+    <div className="min-h-screen bg-[#FBF7F0] flex items-center justify-center p-4" data-testid="onboarding-page">
       <div className="w-full max-w-2xl">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#312E81] to-[#1E1B4B] flex items-center justify-center">
             <Store className="w-6 h-6 text-white" />
           </div>
           <div>
-            <div className="font-display font-black text-xl text-slate-900">Dukaan AI Copilot</div>
+            <div className="font-serif-display font-black text-xl text-slate-900">Dukaan AI Copilot</div>
             <div className="text-xs font-semibold text-slate-500">Step {step} of 2</div>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function Onboarding() {
 
             <div className="flex gap-2 mt-6 justify-between">
               <Button variant="outline" onClick={() => nav("/")} className="h-11"><ArrowLeft className="w-4 h-4 mr-2" /> Back</Button>
-              <Button data-testid="next-step" onClick={next} className="h-11 bg-blue-600 hover:bg-blue-700">
+              <Button data-testid="next-step" onClick={next} className="h-11 btn-brand">
                 Next <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </div>
@@ -109,8 +109,8 @@ export default function Onboarding() {
         )}
 
         {step === 2 && (
-          <Card className="p-6 md:p-8 bg-white border-slate-200" data-testid="seed-choice">
-            <div className="font-display font-black text-2xl text-slate-900 mb-1">Kaise start karna hai?</div>
+          <Card className="p-6 md:p-8 bg-white border-[#EFE6D3]" data-testid="seed-choice">
+            <div className="font-serif-display font-black text-2xl md:text-3xl text-slate-900 mb-1">Kaise start karna hai?</div>
             <div className="text-sm text-slate-500 mb-6">Empty shop se ya sample data ke saath?</div>
 
             <div className="grid md:grid-cols-2 gap-3">
@@ -118,9 +118,9 @@ export default function Onboarding() {
                 data-testid="start-empty"
                 onClick={() => submit(false)}
                 disabled={saving}
-                className="text-left p-5 rounded-xl border-2 border-slate-200 bg-white hover:border-blue-500 hover:bg-blue-50/30 transition-all"
+                className="text-left p-5 rounded-xl border-2 border-[#EFE6D3] bg-white hover:border-[#312E81] hover:bg-[#F8F3E7] transition-all"
               >
-                <div className="w-11 h-11 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center mb-3">
+                <div className="w-11 h-11 rounded-xl bg-[#F3EDDF] text-[#312E81] flex items-center justify-center mb-3">
                   <Package size={20} />
                 </div>
                 <div className="font-display font-bold text-slate-900 mb-1">Empty Shop</div>
@@ -136,10 +136,10 @@ export default function Onboarding() {
                 data-testid="start-samples"
                 onClick={() => submit(true)}
                 disabled={saving}
-                className="text-left p-5 rounded-xl border-2 border-blue-200 bg-blue-50/50 hover:border-blue-500 transition-all relative"
+                className="text-left p-5 rounded-xl border-2 border-[#EA580C]/40 bg-orange-50/40 hover:border-[#EA580C] transition-all relative"
               >
-                <div className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-widest text-blue-700">Popular</div>
-                <div className="w-11 h-11 rounded-lg bg-blue-600 text-white flex items-center justify-center mb-3">
+                <div className="absolute top-3 right-3 text-[10px] font-bold uppercase tracking-widest text-[#EA580C]">Popular</div>
+                <div className="w-11 h-11 rounded-xl bg-[#EA580C] text-white flex items-center justify-center mb-3">
                   <Sparkles size={20} />
                 </div>
                 <div className="font-display font-bold text-slate-900 mb-1">Sample Data ke Saath</div>

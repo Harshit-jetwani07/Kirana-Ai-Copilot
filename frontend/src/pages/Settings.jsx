@@ -20,6 +20,7 @@ export default function Settings() {
 
   const save = async () => {
     await api.updateSettings(form);
+    window.dispatchEvent(new Event("dukaan-lang-changed"));
     toast.success("Settings save ho gayi");
   };
 
@@ -92,7 +93,7 @@ export default function Settings() {
           </div>
         </div>
 
-        <Button data-testid="st-save" onClick={save} className="bg-blue-600 hover:bg-blue-700 h-11">Save Settings</Button>
+        <Button data-testid="st-save" onClick={save} className="bg-[#312E81] hover:bg-[#1E1B4B] h-11">Save Settings</Button>
       </Card>
 
       <Card className="p-5 bg-white border-slate-200" data-testid="data-tools">
@@ -101,7 +102,7 @@ export default function Settings() {
         <div className="flex flex-wrap gap-2">
           {!isDemo && (
             <Button data-testid="import-samples-btn" variant="outline" onClick={importSamples} disabled={busy} className="h-11">
-              <Sparkles className="w-4 h-4 mr-2 text-blue-600" /> Import Kirana Sample Data
+              <Sparkles className="w-4 h-4 mr-2 text-[#312E81]" /> Import Kirana Sample Data
             </Button>
           )}
           {isDemo && (
@@ -117,10 +118,10 @@ export default function Settings() {
       <Card className="p-5 bg-white border-slate-200" data-testid="multi-store-section">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Store className="w-4 h-4 text-blue-600" />
+            <Store className="w-4 h-4 text-[#312E81]" />
             <div className="font-display font-bold text-slate-900">Multi-Store Manager</div>
           </div>
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Coming Soon</Badge>
+          <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB]">Coming Soon</Badge>
         </div>
         <p className="text-sm text-slate-600 mb-3">Ek se zyada dukaan chalate ho? Jald hi ek hi login se sabhi stores manage kar paayenge.</p>
 
@@ -144,10 +145,10 @@ export default function Settings() {
       <Card className="p-5 bg-white border-slate-200" data-testid="login-section">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-blue-600" />
+            <Users className="w-4 h-4 text-[#312E81]" />
             <div className="font-display font-bold text-slate-900">Login & Team Access</div>
           </div>
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Coming Soon</Badge>
+          <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB]">Coming Soon</Badge>
         </div>
         <p className="text-sm text-slate-600 mb-3">Apne staff ko cashier ya manager access do. Phone-OTP ya Google se login.</p>
         <div className="grid md:grid-cols-2 gap-3 opacity-70 pointer-events-none">

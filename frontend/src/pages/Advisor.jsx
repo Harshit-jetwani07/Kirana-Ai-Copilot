@@ -46,13 +46,13 @@ export default function Advisor() {
       <div>
         <h1 className="font-display text-3xl md:text-4xl font-black text-slate-900 flex items-center gap-3">
           AI Business Advisor
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Gemini 3</Badge>
+          <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB]">Gemini 3</Badge>
         </h1>
         <p className="text-slate-600 text-sm mt-1">Hinglish mein daily insights aur guidance</p>
       </div>
 
       {/* Summary */}
-      <Card className="p-5 bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0">
+      <Card className="p-5 bg-gradient-to-br from-[#312E81] to-[#1E1B4B] text-white border-0">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5" />
           <div className="font-display font-bold">Aaj ka Business Summary</div>
@@ -63,7 +63,7 @@ export default function Advisor() {
       {/* Reorder suggestions */}
       <Card className="p-5 bg-white border-slate-200">
         <div className="flex items-center gap-2 mb-3">
-          <Package className="w-4 h-4 text-blue-600" />
+          <Package className="w-4 h-4 text-[#312E81]" />
           <div className="font-display font-bold text-slate-900">Reorder Suggestions</div>
         </div>
         <div className="grid md:grid-cols-2 gap-2">
@@ -72,7 +72,7 @@ export default function Advisor() {
             <div key={s.product_id} className="p-3 rounded-lg bg-slate-50 border border-slate-100">
               <div className="flex items-center justify-between mb-1">
                 <div className="font-semibold text-slate-900 text-sm">{s.name}</div>
-                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 font-mono-num">{s.recommended_order}</Badge>
+                <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB] font-mono-num">{s.recommended_order}</Badge>
               </div>
               <div className="text-xs text-slate-600">{s.reason}</div>
             </div>
@@ -94,7 +94,7 @@ export default function Advisor() {
         {conv.length > 0 && (
           <div className="space-y-2 mb-3 max-h-[400px] overflow-y-auto" data-testid="advisor-chat">
             {conv.map((m, i) => (
-              <div key={i} className={`p-3 rounded-lg text-sm ${m.role === "user" ? "bg-blue-50 border border-blue-100" : "bg-slate-50 border border-slate-100"}`}>
+              <div key={i} className={`p-3 rounded-lg text-sm ${m.role === "user" ? "bg-[#F3EDDF] border border-[#312E81]/15" : "bg-slate-50 border border-slate-100"}`}>
                 <div className="text-[10px] font-bold uppercase tracking-widest mb-1 opacity-60">{m.role === "user" ? "You" : "AI"}</div>
                 <div className="whitespace-pre-line">{m.text}</div>
               </div>
@@ -112,7 +112,7 @@ export default function Advisor() {
             onKeyDown={(e) => e.key === "Enter" && ask(q)}
             className="h-11"
           />
-          <Button data-testid="advisor-send" onClick={() => ask(q)} disabled={loading} className="h-11 bg-blue-600 hover:bg-blue-700">
+          <Button data-testid="advisor-send" onClick={() => ask(q)} disabled={loading} className="h-11 bg-[#312E81] hover:bg-[#1E1B4B]">
             <Send className="w-4 h-4" />
           </Button>
         </div>

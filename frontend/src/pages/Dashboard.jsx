@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, fmtINR } from "@/lib/api";
+import { useLang } from "@/lib/i18n";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { toast } from "sonner";
 
 const StatCard = ({ icon: Icon, label, hindi, value, sub, tone = "blue", testid }) => {
   const tones = {
-    blue: "bg-blue-50 text-blue-700",
+    blue: "bg-[#F3EDDF] text-[#312E81]",
     green: "bg-green-50 text-green-700",
     amber: "bg-amber-50 text-amber-700",
     red: "bg-red-50 text-red-700",
@@ -33,6 +34,7 @@ const StatCard = ({ icon: Icon, label, hindi, value, sub, tone = "blue", testid 
 };
 
 export default function Dashboard() {
+  const { t } = useLang();
   const [data, setData] = useState(null);
   const [settings, setSettings] = useState({ owner_name: "Ramesh" });
   const [aiSummary, setAiSummary] = useState("");
@@ -78,34 +80,28 @@ export default function Dashboard() {
     return (
       <div className="space-y-6" data-testid="dashboard-empty">
         <div>
-          <h1 className="font-display text-3xl md:text-4xl font-black text-slate-900">Namaste, {(settings.owner_name || "Owner").split(" ")[0]} ji</h1>
+          <h1 className="font-serif-display text-3xl md:text-5xl font-black text-slate-900">{t("namaste")}, {(settings.owner_name || "Owner").split(" ")[0]} {t("ji")}</h1>
           <p className="text-slate-600 mt-1">Aapki dukaan ready hai! Chaliye pehla kaam karte hain.</p>
         </div>
 
-        <Card className="p-6 md:p-8 bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0">
-          <div className="text-[11px] font-bold uppercase tracking-widest opacity-80">Getting Started</div>
-          <div className="font-display text-2xl md:text-3xl font-black mt-1">Pehle kya karna hai?</div>
-          <p className="text-sm opacity-90 mt-2 max-w-lg">4 quick steps mein aapki dukaan fully functional ho jaayegi. Har step complete karne se dashboard smart hoti jaayegi.</p>
+        <Card className="relative overflow-hidden p-6 md:p-8 bg-gradient-to-br from-[#1E1B4B] to-[#312E81] text-white border-0 grain">
+          <div className="absolute -top-16 -right-16 w-56 h-56 bg-[#EA580C] rounded-full blur-3xl opacity-25" />
+          <div className="relative">
+            <div className="pill bg-[#EA580C]/25 text-[#FDBA74] mb-2">Getting Started</div>
+            <div className="font-serif-display text-2xl md:text-3xl font-black mt-1">Setup Checklist</div>
+            <p className="text-sm text-slate-200 mt-2 max-w-lg">5 quick steps mein aapki dukaan fully functional ho jaayegi. Har step complete karne se dashboard smart hoti jaayegi.</p>
+          </div>
         </Card>
 
         <div className="grid md:grid-cols-2 gap-3">
-          <EmptyStep step="1" to="/inventory" icon={Package} title="Create your first product" hindi="Apna pehla product add karo" cta="Product add karo" />
-          <EmptyStep step="2" to="/billing" icon={Receipt} title="Make your first bill" hindi="Pehla bill banao" cta="Naya bill" />
+          <EmptyStep step="1" to="/inventory" icon={Package} title="Add first product" hindi="Apna pehla product add karo" cta="Product add karo" />
+          <EmptyStep step="2" to="/billing" icon={Receipt} title="Create first bill" hindi="Pehla bill banao" cta="Naya bill" />
           <EmptyStep step="3" to="/customers" icon={ShoppingCart} title="Add first customer" hindi="Pehla grahak add karo" cta="Customer add karo" />
           <EmptyStep step="4" to="/suppliers" icon={Truck} title="Add supplier" hindi="Supplier details save karo" cta="Supplier add karo" />
-        </div>
-
-        <Card className="p-5 bg-white border-slate-200">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <div className="font-display font-bold text-slate-900">Ya sample data se try karo</div>
-              <div className="text-sm text-slate-600">17 kirana products, 7 customers, 4 suppliers ke saath demo experience.</div>
-            </div>
-            <Link to="/settings">
-              <Button data-testid="empty-import-samples" variant="outline" className="h-10"><Sparkles className="w-4 h-4 mr-2 text-blue-600" /> Import Sample Data</Button>
-            </Link>
+          <div className="md:col-span-2">
+            <EmptyStep step="5" to="/settings" icon={Sparkles} title="Import sample products (optional)" hindi="Kirana sample data se try karo" cta="Sample data import karo" featured />
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
@@ -119,7 +115,7 @@ export default function Dashboard() {
           <p className="text-slate-600 mt-1 text-sm md:text-base">Aaj ka business ek nazar mein</p>
         </div>
         <Link to="/billing">
-          <Button data-testid="dashboard-new-bill-btn" className="bg-blue-600 hover:bg-blue-700 h-11 px-5">
+          <Button data-testid="dashboard-new-bill-btn" className="bg-[#312E81] hover:bg-[#1E1B4B] h-11 px-5">
             <Receipt className="w-4 h-4 mr-2" /> Naya Bill
           </Button>
         </Link>
@@ -141,10 +137,10 @@ export default function Dashboard() {
 
       {/* AI Summary + Aaj ka kaam */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card className="md:col-span-2 p-5 border-slate-200 bg-gradient-to-br from-blue-50 to-white">
+        <Card className="md:col-span-2 p-5 border-slate-200 bg-gradient-to-br from-[#F3EDDF] to-white">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-lg bg-[#312E81] flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div>
@@ -159,7 +155,7 @@ export default function Dashboard() {
           <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed min-h-[80px]" data-testid="ai-summary-text">
             {aiLoading ? "Soch raha hoon..." : aiSummary}
           </div>
-          <Link to="/advisor" className="inline-flex items-center gap-1 text-blue-700 text-sm font-semibold mt-3 hover:underline" data-testid="link-full-advisor">
+          <Link to="/advisor" className="inline-flex items-center gap-1 text-[#312E81] text-sm font-semibold mt-3 hover:underline" data-testid="link-full-advisor">
             Full advisor kholo <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </Card>
@@ -175,7 +171,7 @@ export default function Dashboard() {
             {data.aaj_ka_kaam.length === 0 && <div className="text-sm text-slate-500">Sab kaam ho gaya!</div>}
             {data.aaj_ka_kaam.map((t, i) => (
               <div key={i} className="p-2.5 rounded-md bg-slate-50 border border-slate-100 text-sm text-slate-700">
-                <Badge className={`mb-1 text-[10px] ${t.type === "low_stock" ? "bg-red-100 text-red-700" : t.type === "udhaar" ? "bg-amber-100 text-amber-700" : t.type === "supplier" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                <Badge className={`mb-1 text-[10px] ${t.type === "low_stock" ? "bg-red-100 text-red-700" : t.type === "udhaar" ? "bg-amber-100 text-amber-700" : t.type === "supplier" ? "bg-[#EEECFB] text-[#312E81]" : "bg-purple-100 text-purple-700"}`}>
                   {t.type.replace("_", " ")}
                 </Badge>
                 <div>{t.text}</div>
@@ -237,7 +233,7 @@ export default function Dashboard() {
             <div className="font-display font-bold text-slate-900">Aaj ka Workflow</div>
             <div className="text-xs text-slate-500">Ek-ek karke complete karo</div>
           </div>
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">4 steps</Badge>
+          <Badge className="bg-[#EEECFB] text-[#312E81] hover:bg-[#EEECFB]">4 steps</Badge>
         </div>
         <div className="grid md:grid-cols-4 gap-3">
           <WorkflowStep
@@ -296,11 +292,11 @@ function WorkflowStep({ step, icon: Icon, title, hindi, to, active, done, metric
       to={to}
       data-testid={testid}
       className={`group relative p-4 rounded-xl border-2 transition-all ${
-        done ? "bg-green-50 border-green-200" : active ? "bg-blue-50 border-blue-200 hover:border-blue-400" : "bg-slate-50 border-slate-200"
+        done ? "bg-green-50 border-green-200" : active ? "bg-[#F3EDDF] border-[#312E81]/25 hover:border-[#312E81]" : "bg-slate-50 border-slate-200"
       }`}
     >
       <div className="flex items-start justify-between mb-3">
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${done ? "bg-green-600" : active ? "bg-blue-600" : "bg-slate-400"} text-white`}>
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${done ? "bg-green-600" : active ? "bg-[#312E81]" : "bg-slate-400"} text-white`}>
           {done ? <CheckCircle2 size={18} /> : <Icon size={18} />}
         </div>
         <div className={`text-[10px] font-bold uppercase tracking-widest ${done ? "text-green-700" : "text-slate-400"}`}>
@@ -310,21 +306,21 @@ function WorkflowStep({ step, icon: Icon, title, hindi, to, active, done, metric
       <div className="font-display font-bold text-slate-900">{title}</div>
       <div className="text-[11px] text-slate-500 mb-2">{hindi}</div>
       <div className={`font-mono-num text-xs font-semibold ${done ? "text-green-700" : "text-slate-700"}`}>{metric}</div>
-      <ArrowRight className="w-3.5 h-3.5 absolute bottom-3 right-3 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+      <ArrowRight className="w-3.5 h-3.5 absolute bottom-3 right-3 text-slate-400 group-hover:text-[#312E81] group-hover:translate-x-0.5 transition-all" />
     </Link>
   );
 }
 
-function EmptyStep({ step, to, icon: Icon, title, hindi, cta }) {
+function EmptyStep({ step, to, icon: Icon, title, hindi, cta, featured }) {
   return (
-    <Link to={to} data-testid={`empty-step-${step}`} className="group p-5 rounded-xl border border-slate-200 bg-white hover:border-blue-500 hover:shadow-md transition-all">
+    <Link to={to} data-testid={`empty-step-${step}`} className={`group p-5 rounded-xl border-2 ${featured ? "border-[#EA580C]/40 bg-orange-50/40" : "border-[#EFE6D3] bg-white"} hover:border-[#312E81] hover:shadow-lg transition-all block`}>
       <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center"><Icon size={18} /></div>
-        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Step {step}</div>
+        <div className={`w-11 h-11 rounded-xl ${featured ? "bg-[#EA580C] text-white" : "bg-[#F3EDDF] text-[#312E81]"} flex items-center justify-center`}><Icon size={19} /></div>
+        <div className={`text-[10px] font-bold uppercase tracking-widest ${featured ? "text-[#EA580C]" : "text-slate-400"}`}>Step {step}</div>
       </div>
       <div className="font-display font-bold text-slate-900">{title}</div>
       <div className="text-xs text-slate-500 mb-3">{hindi}</div>
-      <div className="text-sm font-semibold text-blue-700 group-hover:underline flex items-center gap-1">
+      <div className="text-sm font-bold text-[#312E81] group-hover:underline flex items-center gap-1">
         {cta} <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-all" />
       </div>
     </Link>

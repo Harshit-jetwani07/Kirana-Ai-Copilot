@@ -1,6 +1,7 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
+import { LangProvider } from "@/lib/i18n";
 import Layout from "@/components/Layout";
 import Landing from "@/pages/Landing";
 import Onboarding from "@/pages/Onboarding";
@@ -24,23 +25,25 @@ function RequireShop({ children }) {
 function App() {
   return (
     <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route element={<RequireShop><Layout /></RequireShop>}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/udhaar" element={<Udhaar />} />
-            <Route path="/suppliers" element={<Suppliers />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/advisor" element={<Advisor />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <LangProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route element={<RequireShop><Layout /></RequireShop>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/udhaar" element={<Udhaar />} />
+              <Route path="/suppliers" element={<Suppliers />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/advisor" element={<Advisor />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </LangProvider>
       <Toaster position="top-center" richColors />
     </div>
   );
