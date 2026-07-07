@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sparkles, TrendingUp, Wallet, Package, AlertTriangle, Truck, IndianRupee, Receipt, ArrowRight, RefreshCw } from "lucide-react";
+import { Sparkles, TrendingUp, Wallet, Package, AlertTriangle, Truck, IndianRupee, Receipt, ArrowRight, RefreshCw, ShoppingCart, MessageCircle, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from "recharts";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ const StatCard = ({ icon: Icon, label, hindi, value, sub, tone = "blue", testid 
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [settings, setSettings] = useState({ owner_name: "Ramesh" });
   const [aiSummary, setAiSummary] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -53,7 +54,11 @@ export default function Dashboard() {
     finally { setAiLoading(false); }
   };
 
-  useEffect(() => { load(); loadAI(); }, []);
+  useEffect(() => {
+    load();
+    loadAI();
+    api.settings().then(setSettings).catch(() => {});
+  }, []);
 
   if (!data) {
     return (
@@ -187,6 +192,88 @@ export default function Dashboard() {
           ))}
         </div>
       </Card>
+
+      {/* Today's Workflow */}
+      <Card className="p-5 border-slate-200 bg-white" data-testid="todays-workflow">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="font-display font-bold text-slate-900">Aaj ka Workflow</div>
+            <div className="text-xs text-slate-500">Ek-ek karke complete karo</div>
+          </div>
+          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">4 steps</Badge>
+        </div>
+        <div className="grid md:grid-cols-4 gap-3">
+          <WorkflowStep
+            step={1}
+            icon={ShoppingCart}
+            title="Billing"
+            hindi="Naye bills banao"
+            to="/billing"
+            active={true}
+            done={data.bills_today > 0}
+            metric={`${data.bills_today} bills aaj`}
+            testid="wf-billing"
+          />
+          <WorkflowStep
+            step={2}
+            icon={Package}
+            title="Inventory Update"
+            hindi="Stock check karo"
+            to="/inventory"
+            active={data.low_stock_count > 0}
+            done={data.low_stock_count === 0}
+            metric={data.low_stock_count > 0 ? `${data.low_stock_count} low stock` : "All stocked"}
+            testid="wf-inventory"
+          />
+          <WorkflowStep
+            step={3}
+            icon={MessageCircle}
+            title="Udhaar Reminder"
+            hindi="WhatsApp bhejo"
+            to="/udhaar"
+            active={data.udhaar_customers_count > 0}
+            done={data.udhaar_customers_count === 0}
+            metric={data.udhaar_customers_count > 0 ? `${data.udhaar_customers_count} customers` : "No pending"}
+            testid="wf-udhaar"
+          />
+          <WorkflowStep
+            step={4}
+            icon={Truck}
+            title="Supplier Reorder"
+            hindi="Order place karo"
+            to="/suppliers"
+            active={data.supplier_due > 0 || data.low_stock_count > 0}
+            done={data.supplier_due === 0 && data.low_stock_count === 0}
+            metric={data.supplier_due > 0 ? `${fmtINR(data.supplier_due)} due` : "All paid"}
+            testid="wf-supplier"
+          />
+        </div>
+      </Card>
     </div>
+  );
+}
+
+function WorkflowStep({ step, icon: Icon, title, hindi, to, active, done, metric, testid }) {
+  return (
+    <Link
+      to={to}
+      data-testid={testid}
+      className={`group relative p-4 rounded-xl border-2 transition-all ${
+        done ? "bg-green-50 border-green-200" : active ? "bg-blue-50 border-blue-200 hover:border-blue-400" : "bg-slate-50 border-slate-200"
+      }`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${done ? "bg-green-600" : active ? "bg-blue-600" : "bg-slate-400"} text-white`}>
+          {done ? <CheckCircle2 size={18} /> : <Icon size={18} />}
+        </div>
+        <div className={`text-[10px] font-bold uppercase tracking-widest ${done ? "text-green-700" : "text-slate-400"}`}>
+          Step {step}
+        </div>
+      </div>
+      <div className="font-display font-bold text-slate-900">{title}</div>
+      <div className="text-[11px] text-slate-500 mb-2">{hindi}</div>
+      <div className={`font-mono-num text-xs font-semibold ${done ? "text-green-700" : "text-slate-700"}`}>{metric}</div>
+      <ArrowRight className="w-3.5 h-3.5 absolute bottom-3 right-3 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+    </Link>
   );
 }

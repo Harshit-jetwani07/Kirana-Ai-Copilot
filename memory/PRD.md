@@ -53,3 +53,11 @@ Mobile-first web app for Indian kirana stores. Manages billing, inventory, profi
 ### Not Done (by design)
 - WhatsApp Business API auto-send (kept as wa.me deep links)
 - SMS fallback
+
+## Feb 2026 - Enhancements Round 3 (Production Feel)
+- **Welcome / first-run screen** at /welcome — App name "Dukaan AI Copilot", tagline, Demo card (Sharma Kirana Store with real stats ₹1,065 / ₹139 / ₹4,340 / 7 customers) with "Open Demo Store" CTA, Live card "Apni Dukaan Banao" with "Create My Shop" CTA.
+- **Shop Setup form** — shop_name, owner_name, phone, city/address, business_type dropdown, GST optional, language. Saves via PUT /api/settings, then routes to dashboard. Persistence via localStorage flags dukaan_onboarded + dukaan_mode.
+- **Rich production header** (sticky, glass-morphism backdrop-blur): shop name from settings, DEMO badge (when mode=demo), Saved / Syncing sync indicator with green/amber dot, notifications bell with red count badge, popover listing Aaj ka kaam (low-stock/udhaar/supplier/expiry) polling every 45s, owner-initials avatar (blue gradient).
+- **Aaj ka Workflow section** on Dashboard: 4-step visual card (Billing → Inventory Update → Udhaar Reminder → Supplier Reorder). Steps show green (done) / blue (active) / slate (idle) state with metrics ("10 bills aaj", "7 low stock", "4 customers", "₹20,500 due"). Each step routes to the relevant page.
+- **Switch Shop** action in sidebar clears localStorage and returns to /welcome.
+- **Business type** added to ShopSettings model in backend.

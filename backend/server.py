@@ -160,6 +160,7 @@ class ShopSettings(BaseModel):
     address: str = "Shop No. 12, Main Market, Delhi"
     gst_number: str = ""
     language: str = "hinglish"
+    business_type: str = "Kirana / General Store"
     low_stock_threshold: int = 5
     currency: str = "INR"
 
